@@ -1,131 +1,240 @@
 import React, { useState } from 'react';
-
-const initialMockUsers = [
-  { id: 1001, name: "Maria Garcia", role: "Teacher", email: "m.garcia@school.edu", status: "Active", department: "Science" },
-  { id: 1002, name: "Juan Dela Cruz", role: "Student", email: "j.delacruz@student.edu", status: "Active", department: "Grade 10" },
-  { id: 1003, name: "Sarah Jenkins", role: "Teacher", email: "sarah.j@school.edu", status: "Active", department: "Mathematics" },
-  { id: 1004, name: "Miguel Santos", role: "Student", email: "m.santos@student.edu", status: "Inactive", department: "Grade 11" },
-  { id: 1005, name: "Elena Rostova", role: "Teacher", email: "elena.r@school.edu", status: "Active", department: "Literature" }
-];
+import { Search, Edit, UserX, UserCheck, Plus, X, Save } from 'lucide-react';
 
 export default function UserManagement() {
-  const [users, setUsers] = useState(initialMockUsers);
+  // User Data State
+  const [users, setUsers] = useState([
+    { id: 1, name: 'Maria Garcia', email: 'm.garcia@school.edu', role: 'Teacher', dept: 'Science', status: 'Active' },
+    { id: 2, name: 'Juan Dela Cruz', email: 'j.delacruz@student.edu', role: 'Student', dept: 'Grade 10', status: 'Active' },
+    { id: 3, name: 'Sarah Jenkins', email: 'sarah.j@school.edu', role: 'Teacher', dept: 'Mathematics', status: 'Active' },
+    { id: 4, name: 'Miguel Santos', email: 'm.santos@student.edu', role: 'Student', dept: 'Grade 11', status: 'Inactive' },
+    { id: 5, name: 'Elena Rostova', email: 'elena.r@school.edu', role: 'Teacher', dept: 'Literature', status: 'Active' },
+  ]);
+
+  // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All Roles');
 
-  // 🛑 MOCK FUNCTION: Filter the users based on search and dropdown
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+
+  // Handlers
+
+  const handleEditClick = (user) => {
+    setEditingUser({ ...user });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
+    setIsEditModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleToggleStatus = (id) => {
+    setUsers(users.map(u => {
+      if (u.id === id) {
+        return { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' };
+      }
+      return u;
+    }));
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'All Roles' || user.role + 's' === roleFilter; 
+    const matchesRole = roleFilter === 'All Roles' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
-  // 🛑 MOCK FUNCTION: Delete/Disable a user
-  const handleDisable = (id) => {
-    if(window.confirm("Are you sure you want to disable this user?")) {
-      setUsers(users.filter(user => user.id !== id));
-    }
-  };
-
-  // 🛑 MOCK FUNCTION: Add a new user (UI only)
-  const handleAddUser = () => {
-    const newName = window.prompt("Enter new user's name:");
-    if (newName) {
-      const newUser = {
-        id: Date.now(),
-        name: newName,
-        role: "Teacher",
-        email: `${newName.split(' ')[0].toLowerCase()}@school.edu`,
-        status: "Active",
-        department: "General"
-      };
-      setUsers([...users, newUser]);
-    }
+  const getRoleStyle = (role) => {
+    return role === 'Teacher' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <header className="mb-8 flex justify-between items-end">
+    <div className="p-8 max-w-6xl mx-auto">
+      
+      {/* Header */}
+      <div className="mb-8 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">User Management</h1>
-          <p className="text-slate-500 mt-1">Manage administrators, teachers, and students.</p>
+          <p className="text-slate-500 mt-2">Manage administrators, teachers, and students.</p>
         </div>
-        <button 
-          onClick={handleAddUser}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all"
-        >
-          + Add New User
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center transition-colors shadow-sm">
+          <Plus className="w-5 h-5 mr-2" /> Add New User
         </button>
-      </header>
-
-      {/* Search and Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 mb-6 flex gap-4 shadow-sm">
-        <input 
-          type="text" 
-          placeholder="Search by name or email..." 
-          className="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select 
-          className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-600"
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-        >
-          <option>All Roles</option>
-          <option>Teachers</option>
-          <option>Students</option>
-        </select>
       </div>
 
-      {/* User Data Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="p-4 font-bold border-b border-slate-200">Name / Email</th>
-                <th className="p-4 font-bold border-b border-slate-200">Role</th>
-                <th className="p-4 font-bold border-b border-slate-200">Dept / Grade</th>
-                <th className="p-4 font-bold border-b border-slate-200">Status</th>
-                <th className="p-4 font-bold border-b border-slate-200 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.length === 0 ? (
-                <tr><td colSpan="5" className="p-4 text-center text-slate-500">No users found.</td></tr>
-              ) : filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
-                  <td className="p-4">
-                    <p className="font-bold text-slate-800">{user.name}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                      user.role === 'Teacher' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="p-4 text-slate-600 font-medium">{user.department}</td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      user.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <button className="text-blue-600 font-bold text-sm hover:underline mr-4">Edit</button>
-                    <button onClick={() => handleDisable(user.id)} className="text-red-500 font-bold text-sm hover:underline">Disable</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Main Content Area */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        
+        {/* Toolbar (Search & Filter) */}
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          <select 
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="border border-slate-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="All Roles">All Roles</option>
+            <option value="Teacher">Teacher</option>
+            <option value="Student">Student</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+
+        {/* Table Header */}
+        <div className="grid grid-cols-12 gap-4 p-4 border-b border-slate-100 bg-white text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <div className="col-span-4">Name / Email</div>
+          <div className="col-span-2">Role</div>
+          <div className="col-span-3">Dept / Grade</div>
+          <div className="col-span-1">Status</div>
+          <div className="col-span-2 text-right pr-2">Actions</div>
+        </div>
+
+        {/* Table Body */}
+        <div className="divide-y divide-slate-100">
+          {filteredUsers.map((user) => (
+            <div key={user.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-slate-50 transition-colors">
+              
+              <div className="col-span-4">
+                <h3 className="font-bold text-slate-900 text-sm">{user.name}</h3>
+                <p className="text-xs text-slate-500">{user.email}</p>
+              </div>
+              
+              <div className="col-span-2">
+                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getRoleStyle(user.role)}`}>
+                  {user.role}
+                </span>
+              </div>
+              
+              <div className="col-span-3 text-sm text-slate-600 font-medium">
+                {user.dept}
+              </div>
+              
+              <div className="col-span-1">
+                <span className={`px-2 py-1 rounded text-xs font-bold ${user.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                  {user.status}
+                </span>
+              </div>
+              
+              <div className="col-span-2 flex justify-end gap-3 text-sm font-bold">
+                <button 
+                  onClick={() => handleEditClick(user)}
+                  className="text-blue-600 hover:text-blue-800 transition-colors flex items-center"
+                >
+                  <Edit className="w-4 h-4 mr-1" /> Edit
+                </button>
+                <button 
+                  onClick={() => handleToggleStatus(user.id)}
+                  className={`${user.status === 'Active' ? 'text-red-500 hover:text-red-700' : 'text-emerald-600 hover:text-emerald-800'} transition-colors flex items-center w-20 justify-end`}
+                >
+                  {user.status === 'Active' ? <><UserX className="w-4 h-4 mr-1" /> Disable</> : <><UserCheck className="w-4 h-4 mr-1" /> Enable</>}
+                </button>
+              </div>
+
+            </div>
+          ))}
+          
+          {filteredUsers.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-sm">
+              No users found matching your search.
+            </div>
+          )}
         </div>
       </div>
+
+      {/* EDIT MODAL */}
+      {isEditModalOpen && editingUser && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-lg font-black text-slate-900">Edit User</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                <input 
+                  type="text" 
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({...editingUser, name: e.target.value})}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Role</label>
+                  <select 
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Teacher">Teacher</option>
+                    <option value="Student">Student</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Dept / Grade</label>
+                  <input 
+                    type="text" 
+                    value={editingUser.dept}
+                    onChange={(e) => setEditingUser({...editingUser, dept: e.target.value})}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
+                <button 
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center shadow-sm"
+                >
+                  <Save className="w-4 h-4 mr-2" /> Save Changes
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

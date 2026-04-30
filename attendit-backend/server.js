@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config(); // Ensure this is at the top!
+require('dotenv').config(); 
 
 const authRoutes = require('./routes/authRoutes');
 
@@ -9,9 +9,9 @@ const app = express();
 
 // 1. MIDDLEWARE
 app.use(express.json());
-app.use(cors()); // This must be ABOVE the routes
+app.use(cors()); 
 
-// 2. REQUEST LOGGER (To help us debug)
+// 2. REQUEST LOGGER 
 app.use((req, res, next) => {
   console.log(`Incoming ${req.method} request to: ${req.url}`);
   next();

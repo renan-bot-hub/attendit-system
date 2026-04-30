@@ -11,14 +11,14 @@ export default function Reports() {
   const [reportType, setReportType] = useState('Comprehensive Attendance');
   const [format, setFormat] = useState('PDF');
 
-  // 🛑 MOCK FUNCTION: Generate a new report
+  // Generate a new report
   const handleGenerate = (e) => {
     e.preventDefault();
     
     const newReport = {
       id: `REP-00${reports.length + 1}`,
       name: `${reportType} Export`,
-      date: new Date().toISOString().split('T')[0], // Today's date
+      date: new Date().toISOString().split('T')[0], 
       type: format,
       size: format === 'PDF' ? '1.8 MB' : '0.5 MB'
     };

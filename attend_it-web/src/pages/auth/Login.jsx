@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// ✅ Notice the updated relative path below
 import { authService } from '../../services/authService';
 
 export default function Login() {
@@ -11,21 +10,20 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 🛑 UI TESTING BYPASS (No Database Required)
+    // UI TESTING BYPASS
     if (email === 'admin@test.com' && password === 'admin123') {
       localStorage.setItem('token', 'fake-admin-token-123');
       localStorage.setItem('user', JSON.stringify({ id: '999', name: 'Test Admin', role: 'admin' }));
-      window.location.href = '/admin'; // ✅ Redirects to Admin Route
+      window.location.href = '/admin';
       return; 
     }
 
     if (email === 'teacher@test.com' && password === 'teacher123') {
       localStorage.setItem('token', 'fake-teacher-token-123');
       localStorage.setItem('user', JSON.stringify({ id: '888', name: 'Test Teacher', role: 'teacher' }));
-      window.location.href = '/teacher'; // ✅ Redirects to Teacher Route
+      window.location.href = '/teacher'; 
       return; 
     }
-    // 🛑 END OF BYPASS
 
     try {
       await authService.login({ email, password });
@@ -39,11 +37,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-black text-blue-600">ATTEND_IT</h2>
-          <p className="text-slate-500 text-sm font-medium mt-1">Welcome back, login to your dashboard</p>
+          <h2 className="text-3xl font-black text-blue-600">ATTEND IT</h2>
+          <p className="text-slate-500 text-sm font-medium mt-1">Welcome back! Please login to your dashboard.</p>
           
           <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg border border-yellow-200 text-left">
-            <p className="font-bold mb-1">🧪 UI Testing Credentials:</p>
+            <p className="font-bold mb-1">Credentials:</p>
             <p>Admin: admin@test.com / admin123</p>
             <p>Teacher: teacher@test.com / teacher123</p>
           </div>

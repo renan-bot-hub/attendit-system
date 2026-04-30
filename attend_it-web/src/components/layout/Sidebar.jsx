@@ -14,7 +14,7 @@ export default function Sidebar() {
     navigate('/login');
   };
 
-  // 🛡️ Admin Links
+  // Admin Links
   const adminLinks = [
     { name: 'Dashboard', path: '/admin', icon: '📊' },
     { name: 'User Management', path: '/users', icon: '👥' },
@@ -24,7 +24,7 @@ export default function Sidebar() {
     { name: 'Reports', path: '/reports', icon: '📄' },
   ];
 
-  // 📝 Teacher Links
+  // Teacher Links
   const teacherLinks = [
     { name: 'Dashboard', path: '/teacher', icon: '🏠' },
     { name: 'Take Attendance', path: '/attendance', icon: '✅' },

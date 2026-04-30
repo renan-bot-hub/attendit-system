@@ -1,12 +1,11 @@
 import React from 'react';
 
-// 1. This is your "Mock Data" (Fake Database)
-// We put it right at the top so it's easy to edit or add more people!
+// Mock Data
 const mockTeachers = [
-  { id: 1, name: "Sarah Jenkins", email: "snp", status: "Active", department: "Mathematics" },
-  { id: 2, name: "Mark Roberts", email: "mark.r@school.edu", status: "Offline", department: "Science" },
-  { id: 3, name: "Elena Rostova", email: "elena.r@school.edu", status: "Active", department: "Literature" },
-  { id: 4, name: "David Chen", email: "david.c@school.edu", status: "Active", department: "History" }
+  { id: 1, name: "Sarah Jenkins", email: "sarah@school.edu", status: "Active", department: "Mathematics" },
+  { id: 2, name: "Mark Roberts", email: "mark@school.edu", status: "Offline", department: "Science" },
+  { id: 3, name: "Elena Rostova", email: "elena@school.edu", status: "Active", department: "Literature" },
+  { id: 4, name: "David Chen", email: "david@school.edu", status: "Active", department: "English" }
 ];
 
 export default function AdminDashboard() {
@@ -57,7 +56,6 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {/* 2. Here is where we "Map" (loop) through our mock data */}
               {mockTeachers.map((teacher) => (
                 <tr key={teacher.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
                   <td className="p-4 font-bold text-slate-800">{teacher.name}</td>
