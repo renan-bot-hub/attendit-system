@@ -12,10 +12,6 @@ export default function AttendanceLedger() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [newStatus, setNewStatus] = useState('');
 
-  useEffect(() => {
-    fetchAttendanceRecords();
-  }, []);
-
   const fetchAttendanceRecords = async () => {
     try {
       const res = await attendService.getLedger();
@@ -28,6 +24,10 @@ export default function AttendanceLedger() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAttendanceRecords();
+  }, []);
 
   // Helper to color-code the status pills
   const getStatusStyle = (status) => {

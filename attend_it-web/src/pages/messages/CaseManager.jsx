@@ -25,11 +25,6 @@ export default function CaseManager() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCases();
-    if (isStaff) fetchStudents();
-  }, []);
-
   const fetchCases = async () => {
     setLoading(true);
     try {
@@ -48,10 +43,16 @@ export default function CaseManager() {
     try {
       const res = await userService.getAllUsers();
       setStudents(res.data.filter((u) => u.role === 'student'));
-    } catch (err) {
+    } catch {
       // silent — staff can still create cases without picking from list if students aren't available
     }
   };
+
+  useEffect(() => {
+    fetchCases();
+    if (isStaff) fetchStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAction = async (id, newStatus) => {
     try {

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, ClipboardCheck, BookOpen, MessageCircle, FileText,
   BarChart3, Settings, FileBarChart, UserCircle, LogOut, GraduationCap, Menu, X,
 } from 'lucide-react';
-import { useSchool } from '../../context/SchoolContext';
+import { useSchool } from '../../context/useSchool';
 
 const ICONS = {
   dashboard: LayoutDashboard,

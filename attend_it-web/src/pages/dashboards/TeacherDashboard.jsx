@@ -6,9 +6,8 @@ import {
 import { attendService } from '../../services/attendService';
 import { sessionService } from '../../services/sessionService';
 import { messageService } from '../../services/messageService';
-import { userService } from '../../services/userService';
 import { authService } from '../../services/authService';
-import { useSchool } from '../../context/SchoolContext';
+import { useSchool } from '../../context/useSchool';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();

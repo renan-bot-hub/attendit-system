@@ -21,18 +21,6 @@ export default function Inbox() {
 
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    fetchContacts();
-  }, []);
-
-  useEffect(() => {
-    if (activeChat) fetchThread(activeChat._id);
-  }, [activeChat]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   const fetchContacts = async () => {
     setLoading(true);
     try {
@@ -55,6 +43,20 @@ export default function Inbox() {
       setError(err.response?.data?.message || 'Failed to load conversation.');
     }
   };
+
+  useEffect(() => {
+    fetchContacts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (activeChat) fetchThread(activeChat._id);
+     
+  }, [activeChat]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

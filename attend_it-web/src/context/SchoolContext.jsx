@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { settingsService } from '../services/settingsService';
 
-const SchoolContext = createContext(null);
+// eslint-disable-next-line react-refresh/only-export-components
+export const SchoolContext = createContext(null);
 
 export function SchoolProvider({ children }) {
   const [settings, setSettings] = useState({
@@ -20,13 +21,16 @@ export function SchoolProvider({ children }) {
       const res = await settingsService.get();
       setSettings(res.data);
     } catch {
-      // Backend may be unreachable — fall back to defaults
+      // Backend unreachable — keep defaults
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+     
+  }, []);
 
   return (
     <SchoolContext.Provider value={{ settings, loading, refresh, setSettings }}>
@@ -34,5 +38,3 @@ export function SchoolProvider({ children }) {
     </SchoolContext.Provider>
   );
 }
-
-export const useSchool = () => useContext(SchoolContext);

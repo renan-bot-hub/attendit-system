@@ -7,7 +7,7 @@ import {
 import { userService } from '../../services/userService';
 import { attendService } from '../../services/attendService';
 import { caseService } from '../../services/caseService';
-import { useSchool } from '../../context/SchoolContext';
+import { useSchool } from '../../context/useSchool';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();

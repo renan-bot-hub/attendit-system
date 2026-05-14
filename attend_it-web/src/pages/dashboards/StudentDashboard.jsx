@@ -6,7 +6,7 @@ import {
 import { attendService } from '../../services/attendService';
 import { caseService } from '../../services/caseService';
 import { authService } from '../../services/authService';
-import { useSchool } from '../../context/SchoolContext';
+import { useSchool } from '../../context/useSchool';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();

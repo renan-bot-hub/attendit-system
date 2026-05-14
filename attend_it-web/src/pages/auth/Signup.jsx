@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, UserPlus } from 'lucide-react';
 import { authService } from '../../services/authService';
-import { useSchool } from '../../context/SchoolContext';
+import { useSchool } from '../../context/useSchool';
 
 export default function Signup() {
   const [form, setForm] = useState({

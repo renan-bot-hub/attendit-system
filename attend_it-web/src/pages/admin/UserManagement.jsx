@@ -30,6 +30,24 @@ export default function UserManagement() {
   const [importResult, setImportResult] = useState(null);
   const [importing, setImporting] = useState(false);
 
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await userService.getAllUsers();
+      setUsers(res.data);
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load users.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -95,24 +113,6 @@ export default function UserManagement() {
     a.download = 'users_template.csv';
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await userService.getAllUsers();
-      setUsers(res.data);
-      setError('');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load users.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showSuccess = (msg) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   const handleEditClick = (user) => {

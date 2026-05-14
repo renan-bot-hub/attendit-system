@@ -13,28 +13,6 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [sumRes, riskRes] = await Promise.all([
-        attendService.getSummary(),
-        attendService.getRiskAnalysis(),
-      ]);
-      setSummary(sumRes.data);
-      setRisk(riskRes.data);
-      buildInsights(sumRes.data, riskRes.data);
-      setError('');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load analytics.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const buildInsights = (sum, riskData) => {
     const generated = [];
     const critical = riskData.filter((r) => r.riskLevel === 'Critical').length;
@@ -71,6 +49,29 @@ export default function Analytics() {
     }
     setInsights(generated);
   };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [sumRes, riskRes] = await Promise.all([
+        attendService.getSummary(),
+        attendService.getRiskAnalysis(),
+      ]);
+      setSummary(sumRes.data);
+      setRisk(riskRes.data);
+      buildInsights(sumRes.data, riskRes.data);
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load analytics.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRunAnalysis = async () => {
     setIsAnalyzing(true);

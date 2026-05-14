@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Settings, Save, CheckCircle, School, Sliders, Phone } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
-import { useSchool } from '../../context/SchoolContext';
+import { useSchool } from '../../context/useSchool';
 
 export default function SystemConfig() {
-  const { settings: ctxSettings, refresh } = useSchool();
+  const { refresh } = useSchool();
   const [form, setForm] = useState({
     schoolName: '', schoolType: 'public', academicYear: '',
     consecutiveAbsenceThreshold: 3,

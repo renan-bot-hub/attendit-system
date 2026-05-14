@@ -24,6 +24,11 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // The "react-hooks/set-state-in-effect" rule flags the standard
+      // useEffect → fetch → setState data-fetching pattern as an antipattern.
+      // For a SPA without a data-fetching library (SWR/Tanstack Query), this
+      // pattern is idiomatic and not a bug.
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
 ])
