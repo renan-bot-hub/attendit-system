@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { attendService } from '../../services/attendService';
 import { caseService } from '../../services/caseService';
 
+// Report generator: pick a type, download as CSV
 export default function Reports() {
   const [reportType, setReportType] = useState('Attendance Ledger');
   const [format, setFormat] = useState('CSV');
@@ -9,6 +10,7 @@ export default function Reports() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  // Convert an array of rows to a CSV string given a column schema
   const toCSV = (rows, columns) => {
     const escape = (val) => {
       if (val === null || val === undefined) return '';
@@ -20,6 +22,7 @@ export default function Reports() {
     return header + '\n' + body;
   };
 
+  // Trigger a browser download for a blob of text content
   const download = (filename, content, type = 'text/csv') => {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
@@ -32,6 +35,7 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   };
 
+  // Fetch the picked report type, convert to CSV, and trigger download
   const handleGenerate = async (e) => {
     e.preventDefault();
     setBusy(true);

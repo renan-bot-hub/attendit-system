@@ -1,20 +1,18 @@
 import axios from 'axios';
 
-// In dev, defaults to http://localhost:5000/api.
-// In production (Render static site), set VITE_API_URL to your backend URL,
-// e.g. https://attendit-backend.onrender.com/api
+// Shared axios instance — baseURL comes from VITE_API_URL in production
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 });
 
-// Attach JWT to every request
+// Attach the saved JWT to every outgoing request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Auto-logout on 401
+// If any response is 401, clear the session and bounce the user to /login
 API.interceptors.response.use(
   (response) => response,
   (error) => {

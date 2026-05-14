@@ -1,15 +1,13 @@
 import API from './api';
 
 export const caseService = {
-  getCases: async () => {
-    return await API.get('/cases');
-  },
+  // List cases (students see their own; staff see all)
+  getCases: async () => API.get('/cases'),
 
-  createCase: async (data) => {
-    return await API.post('/cases', data);
-  },
+  // Submit a new excuse / medical case
+  createCase: async (data) => API.post('/cases', data),
 
-  updateStatus: async (id, status, reviewNote = '') => {
-    return await API.patch(`/cases/${id}/status`, { status, reviewNote });
-  },
+  // Staff: approve / reject / revert a case
+  updateStatus: async (id, status, reviewNote = '') =>
+    API.patch(`/cases/${id}/status`, { status, reviewNote }),
 };

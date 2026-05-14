@@ -9,6 +9,7 @@ import { attendService } from '../../services/attendService';
 import { caseService } from '../../services/caseService';
 import { useSchool } from '../../context/useSchool';
 
+// Admin home page: full-system KPIs, at-risk students, quick actions
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { settings } = useSchool();
@@ -142,6 +143,7 @@ export default function AdminDashboard() {
   );
 }
 
+// Small stat tile (count + icon)
 function KPI({ label, value, icon, accent }) {
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -154,6 +156,7 @@ function KPI({ label, value, icon, accent }) {
   );
 }
 
+// Larger headline stat (with sub-text)
 function Big({ label, value, sub, icon, accent }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -167,6 +170,7 @@ function Big({ label, value, sub, icon, accent }) {
   );
 }
 
+// Sidebar-style action button for the dark "quick actions" panel
 function QuickBtn({ onClick, icon, children }) {
   return (
     <button

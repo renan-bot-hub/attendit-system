@@ -4,6 +4,7 @@ import { GraduationCap, Lock, Mail, ArrowRight } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
 
+// Two-pane login screen with school branding
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,6 +13,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { settings } = useSchool();
 
+  // Authenticate then route to the user's dashboard based on role
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');

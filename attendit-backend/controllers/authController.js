@@ -54,6 +54,7 @@ exports.signup = async (req, res) => {
   }
 };
 
+// Validates credentials and returns a JWT + user payload
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;

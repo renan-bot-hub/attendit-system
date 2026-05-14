@@ -1,12 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 
-/**
- * Restricts a route to specific roles. Falls back to /login if logged out
- * or to the user's home dashboard if they're authenticated but unauthorized.
- *
- * Usage: <RoleRoute roles={['admin']}><AdminPage /></RoleRoute>
- */
+// Gate a route by role. Unauthenticated -> /login. Wrong role -> own home.
 export default function RoleRoute({ roles, children }) {
   const user = authService.getCurrentUser();
   const token = localStorage.getItem('token');

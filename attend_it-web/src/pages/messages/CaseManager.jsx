@@ -4,6 +4,7 @@ import { caseService } from '../../services/caseService';
 import { userService } from '../../services/userService';
 import { authService } from '../../services/authService';
 
+// Page for submitting and reviewing excuse letters / medical certificates
 export default function CaseManager() {
   const currentUser = authService.getCurrentUser();
   const isStaff = currentUser?.role === 'teacher' || currentUser?.role === 'admin';
@@ -25,6 +26,7 @@ export default function CaseManager() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  // Load cases — students see their own; staff see all
   const fetchCases = async () => {
     setLoading(true);
     try {
@@ -39,6 +41,7 @@ export default function CaseManager() {
     }
   };
 
+  // For staff: list of students to pick from when creating a case
   const fetchStudents = async () => {
     try {
       const res = await userService.getAllUsers();
@@ -54,6 +57,7 @@ export default function CaseManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Approve / reject / revert a case
   const handleAction = async (id, newStatus) => {
     try {
       const res = await caseService.updateStatus(id, newStatus);
@@ -64,6 +68,7 @@ export default function CaseManager() {
     }
   };
 
+  // Submit a new case to the backend
   const handleCreate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -82,6 +87,7 @@ export default function CaseManager() {
     }
   };
 
+  // Render a colored status badge for a case
   const getStatusBadge = (status) => {
     switch (status) {
       case 'Pending':
@@ -102,6 +108,7 @@ export default function CaseManager() {
     return name.includes(q) || sid.includes(q);
   });
 
+  // "Jan 5, 2026" — null-safe
   const formatDate = (d) => {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });

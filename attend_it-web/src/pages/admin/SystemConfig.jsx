@@ -3,6 +3,7 @@ import { Settings, Save, CheckCircle, School, Sliders, Phone } from 'lucide-reac
 import { settingsService } from '../../services/settingsService';
 import { useSchool } from '../../context/useSchool';
 
+// Admin page to edit school identity, attendance thresholds, and contact info
 export default function SystemConfig() {
   const { refresh } = useSchool();
   const [form, setForm] = useState({
@@ -30,6 +31,7 @@ export default function SystemConfig() {
     load();
   }, []);
 
+  // Save settings to the backend and refresh the shared SchoolContext
   const handleSave = async () => {
     setSaving(true);
     setError('');
@@ -144,6 +146,7 @@ export default function SystemConfig() {
   );
 }
 
+// White card grouping a related set of settings
 function Section({ icon, title, children }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -156,6 +159,7 @@ function Section({ icon, title, children }) {
   );
 }
 
+// Two-column row: label/hint on the left, control on the right
 function Row({ label, hint, children }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import { attendService } from '../../services/attendService';
 
+// Analytics dashboard: KPIs, auto-generated insights, risk breakdown
 export default function Analytics() {
   const [summary, setSummary] = useState({
     overallRate: 0, totalSessions: 0, totalStudents: 0, present: 0, late: 0, absent: 0,
@@ -13,6 +14,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Generate plain-English insights from the summary + risk data
   const buildInsights = (sum, riskData) => {
     const generated = [];
     const critical = riskData.filter((r) => r.riskLevel === 'Critical').length;
@@ -50,6 +52,7 @@ export default function Analytics() {
     setInsights(generated);
   };
 
+  // Fetch the summary + risk data and rebuild insights
   const loadData = async () => {
     setLoading(true);
     try {
@@ -73,6 +76,7 @@ export default function Analytics() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-run the data load and update the "last refreshed" stamp
   const handleRunAnalysis = async () => {
     setIsAnalyzing(true);
     await loadData();
@@ -80,10 +84,12 @@ export default function Analytics() {
     setIsAnalyzing(false);
   };
 
+  // Remove a single insight banner from view
   const handleDismissInsight = (id) => {
     setInsights(insights.filter((i) => i.id !== id));
   };
 
+  // Map insight type → color classes
   const getBannerStyles = (type) => {
     switch (type) {
       case 'alert':   return { wrapper: 'bg-red-50 border-red-200 text-red-700', text: 'text-red-700' };

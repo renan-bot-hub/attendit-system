@@ -9,6 +9,7 @@ import { messageService } from '../../services/messageService';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
 
+// Teacher home page: at-risk roster, recent sessions, message modal
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const me = authService.getCurrentUser();
@@ -45,11 +46,13 @@ export default function TeacherDashboard() {
     load();
   }, []);
 
+  // Open the message modal pre-filled for this at-risk student
   const handleMessageStudent = (student) => {
     setSelectedStudent(student);
     setMessageText(`Hi, this is ${me?.name}. I noticed your attendance is at ${student.attendanceRate}%. Let's discuss how I can support you.`);
   };
 
+  // Persist the message to the backend inbox
   const handleSendMessage = async () => {
     if (!selectedStudent || !messageText.trim()) return;
     setSending(true);
@@ -218,6 +221,7 @@ export default function TeacherDashboard() {
   );
 }
 
+// Small stat tile
 function KPI({ label, value, accent, icon }) {
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">

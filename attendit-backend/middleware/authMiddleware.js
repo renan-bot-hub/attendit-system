@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 
+// Verifies the Bearer JWT in Authorization header and attaches req.user
 module.exports = (req, res, next) => {
   const header = req.headers.authorization;
 

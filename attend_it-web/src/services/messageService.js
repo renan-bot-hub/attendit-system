@@ -1,18 +1,12 @@
 import API from './api';
 
 export const messageService = {
-  // List conversation partners with last-message preview
-  getContacts: async () => {
-    return await API.get('/messages/contacts');
-  },
+  // List people you've messaged with, plus last-message preview + unread count
+  getContacts: async () => API.get('/messages/contacts'),
 
-  // Full conversation thread with a specific partner
-  getThread: async (partnerId) => {
-    return await API.get(`/messages/thread/${partnerId}`);
-  },
+  // Full message thread between you and a partner
+  getThread: async (partnerId) => API.get(`/messages/thread/${partnerId}`),
 
-  // Send a new message
-  sendMessage: async (recipientId, text) => {
-    return await API.post('/messages', { recipientId, text });
-  },
+  // Send a new message to a recipient
+  sendMessage: async (recipientId, text) => API.post('/messages', { recipientId, text }),
 };

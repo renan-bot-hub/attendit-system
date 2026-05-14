@@ -1,15 +1,12 @@
 import API from './api';
 
 export const sessionService = {
-  getSessions: async () => {
-    return await API.get('/sessions');
-  },
+  // List class sessions (admins see all; teachers see their own)
+  getSessions: async () => API.get('/sessions'),
 
-  createSession: async (data) => {
-    return await API.post('/sessions', data);
-  },
+  // Create a new class session
+  createSession: async (data) => API.post('/sessions', data),
 
-  toggleSession: async (id) => {
-    return await API.patch(`/sessions/${id}/toggle`);
-  },
+  // Activate or deactivate a session
+  toggleSession: async (id) => API.patch(`/sessions/${id}/toggle`),
 };

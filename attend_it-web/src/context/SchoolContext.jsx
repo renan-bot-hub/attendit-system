@@ -4,6 +4,7 @@ import { settingsService } from '../services/settingsService';
 // eslint-disable-next-line react-refresh/only-export-components
 export const SchoolContext = createContext(null);
 
+// Loads school settings once and shares them with every page
 export function SchoolProvider({ children }) {
   const [settings, setSettings] = useState({
     schoolName: 'My School',
@@ -16,6 +17,7 @@ export function SchoolProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
+  // Re-fetches settings from the backend (called on mount and after admin saves)
   const refresh = async () => {
     try {
       const res = await settingsService.get();

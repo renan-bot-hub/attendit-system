@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const User = require('./models/User');
 
+// Wipes the users collection and inserts three test accounts (admin/teacher/student)
 const seedDB = async () => {
   try {
     // Connect to MongoDB

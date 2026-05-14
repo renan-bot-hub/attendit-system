@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { UserCircle, Lock, Save, KeyRound } from 'lucide-react';
 import { userService } from '../../services/userService';
 
+// "My Profile" page: edit own details + change own password
 export default function Profile() {
   const [me, setMe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function Profile() {
     load();
   }, []);
 
+  // Save edits to name / email / department / section
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSavingProfile(true);
@@ -51,6 +53,7 @@ export default function Profile() {
     }
   };
 
+  // Verify current password, then update to a new one
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setPwdMsg({ text: '', type: '' });
@@ -185,6 +188,7 @@ export default function Profile() {
   );
 }
 
+// Labeled form-field wrapper
 function Field({ label, children }) {
   return (
     <div>

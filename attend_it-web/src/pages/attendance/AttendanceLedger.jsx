@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, X, Check, Edit2 } from 'lucide-react';
 import { attendService } from '../../services/attendService';
 
+// Authoritative log of all attendance records, with a per-row "correct entry" modal
 export default function AttendanceLedger() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ export default function AttendanceLedger() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [newStatus, setNewStatus] = useState('');
 
+  // Load all attendance records for the current user's scope
   const fetchAttendanceRecords = async () => {
     try {
       const res = await attendService.getLedger();
@@ -29,7 +31,7 @@ export default function AttendanceLedger() {
     fetchAttendanceRecords();
   }, []);
 
-  // Helper to color-code the status pills
+  // Color-code the status pills
   const getStatusStyle = (status) => {
     switch (status) {
       case 'Present':
@@ -43,7 +45,7 @@ export default function AttendanceLedger() {
     }
   };
 
-  // Format date for display
+  // Format a Date string as MM/DD/YYYY
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -62,14 +64,14 @@ export default function AttendanceLedger() {
     );
   });
 
-  // Handle opening the modal
+  // Open the per-row correction modal
   const openCorrectionModal = (entry) => {
     setEditingEntry(entry);
     setNewStatus(entry.status);
   };
 
-  // Save correction to backend
   const [saving, setSaving] = useState(false);
+  // Persist the corrected status to the backend
   const handleSaveCorrection = async () => {
     if (!editingEntry || !newStatus) return;
     setSaving(true);

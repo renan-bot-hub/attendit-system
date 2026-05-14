@@ -2,6 +2,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { authService } from '../../services/authService';
 
+// Authenticated shell: sidebar on the left + page content on the right
 export default function MainLayout() {
   const user = authService.getCurrentUser();
   const token = localStorage.getItem('token');

@@ -4,6 +4,7 @@ import { messageService } from '../../services/messageService';
 import { userService } from '../../services/userService';
 import { authService } from '../../services/authService';
 
+// Two-pane messaging: contact list on the left, active conversation on the right
 export default function Inbox() {
   const currentUser = authService.getCurrentUser();
 
@@ -21,6 +22,7 @@ export default function Inbox() {
 
   const messagesEndRef = useRef(null);
 
+  // Load conversation partners with last-message preview + unread counts
   const fetchContacts = async () => {
     setLoading(true);
     try {
@@ -35,6 +37,7 @@ export default function Inbox() {
     }
   };
 
+  // Load the full thread for the selected partner and mark incoming as read
   const fetchThread = async (partnerId) => {
     try {
       const res = await messageService.getThread(partnerId);
@@ -58,6 +61,7 @@ export default function Inbox() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Send a new message, append it to the thread, and refresh the contact list
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageInput.trim() || !activeChat) return;
@@ -74,6 +78,7 @@ export default function Inbox() {
     }
   };
 
+  // Open the "new conversation" modal and fetch the people you can message
   const openNewChat = async () => {
     setShowNewChat(true);
     try {
@@ -85,6 +90,7 @@ export default function Inbox() {
     }
   };
 
+  // Begin a new chat with the picked user (or reuse the existing one)
   const startConversation = (user) => {
     const existing = contacts.find((c) => c._id === user._id);
     if (existing) {
@@ -105,6 +111,7 @@ export default function Inbox() {
     setShowNewChat(false);
   };
 
+  // Show "HH:MM" for today, otherwise "Mon DD"
   const formatTime = (date) => {
     if (!date) return '';
     const d = new Date(date);

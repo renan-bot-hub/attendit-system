@@ -4,6 +4,7 @@ import { attendService } from '../../services/attendService';
 import { userService } from '../../services/userService';
 import { sessionService } from '../../services/sessionService';
 
+// Class roster checklist for marking Present / Late / Absent and saving to a session
 export default function TakeAttendance() {
   const [students, setStudents] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -47,14 +48,17 @@ export default function TakeAttendance() {
     if (activeSessionId) localStorage.setItem('activeSessionId', activeSessionId);
   }, [activeSessionId]);
 
+  // Update a single student's status in local state
   const handleStatusChange = (id, newStatus) => {
     setStudents(students.map((s) => (s._id === id ? { ...s, status: newStatus } : s)));
   };
 
+  // Set every student to the same status at once
   const markAll = (status) => {
     setStudents(students.map((s) => ({ ...s, status })));
   };
 
+  // Submit the whole roster to the backend for the active session
   const handleSave = async () => {
     if (!activeSessionId) {
       setError('Please select or create a session first.');
@@ -81,6 +85,7 @@ export default function TakeAttendance() {
     }
   };
 
+  // Create a new class session and select it as active
   const handleCreateSession = async (e) => {
     e.preventDefault();
     try {

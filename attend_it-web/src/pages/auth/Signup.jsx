@@ -4,6 +4,7 @@ import { GraduationCap, UserPlus } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
 
+// Public signup page (teacher or student; first user auto-becomes admin)
 export default function Signup() {
   const [form, setForm] = useState({
     name: '', email: '', password: '', role: 'teacher',
@@ -14,6 +15,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const { settings } = useSchool();
 
+  // Submit the signup form; show a bootstrap notice if this user got admin
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
@@ -127,6 +129,7 @@ export default function Signup() {
   );
 }
 
+// Labeled form-field wrapper used inside this page
 function Field({ label, required, children }) {
   return (
     <div>

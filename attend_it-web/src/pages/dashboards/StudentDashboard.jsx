@@ -8,6 +8,7 @@ import { caseService } from '../../services/caseService';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
 
+// Student home page: own attendance rate, recent records, cases
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const me = authService.getCurrentUser();
@@ -63,7 +64,7 @@ export default function StudentDashboard() {
 
       <div className="mb-8 flex justify-between items-end flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Welcome, {me?.name?.split(' ')[0]} 👋</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Welcome, {me?.name?.split(' ')[0]}!</h1>
           <p className="text-slate-500 mt-2">
             {settings.schoolName} • {me?.section || me?.gradeLevel || 'Student'} • AY {settings.academicYear}
           </p>
@@ -162,6 +163,7 @@ export default function StudentDashboard() {
   );
 }
 
+// Small stat tile shown at the top of the dashboard
 function Tile({ label, value, accent, icon }) {
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -174,6 +176,7 @@ function Tile({ label, value, accent, icon }) {
   );
 }
 
+// Color-coded badge for attendance status
 function StatusPill({ status }) {
   const map = {
     Present: 'bg-emerald-100 text-emerald-700',
@@ -187,6 +190,7 @@ function StatusPill({ status }) {
   );
 }
 
+// Color-coded badge for a case's approval state
 function CaseStatus({ status }) {
   const map = {
     Pending: 'bg-amber-100 text-amber-700',

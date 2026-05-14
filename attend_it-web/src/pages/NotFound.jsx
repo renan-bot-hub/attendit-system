@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Compass } from 'lucide-react';
 
+// 404 page shown when no route matches
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">

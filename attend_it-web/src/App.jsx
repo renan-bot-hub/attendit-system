@@ -30,6 +30,7 @@ const ADMIN = ['admin'];
 const STAFF = ['admin', 'teacher'];
 const ALL   = ['admin', 'teacher', 'student'];
 
+// Root component: wires up routing, the school-settings provider, and role guards
 export default function App() {
   return (
     <SchoolProvider>
@@ -72,6 +73,7 @@ export default function App() {
   );
 }
 
+// Sends each user to their role-appropriate dashboard from /
 function RoleHome() {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) return <Navigate to="/login" replace />;

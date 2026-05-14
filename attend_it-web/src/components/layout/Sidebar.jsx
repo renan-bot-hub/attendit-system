@@ -51,6 +51,7 @@ const NAV = {
   ],
 };
 
+// Role-aware navigation: shows the correct menu for admin/teacher/student
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,6 +63,7 @@ export default function Sidebar() {
   const role = user?.role || 'student';
   const links = NAV[role] || NAV.student;
 
+  // Clear session and return to login
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

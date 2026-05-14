@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Edit, UserX, UserCheck, Plus, X, Save, Trash2, Upload, Download } from 'lucide-react';
 import { userService } from '../../services/userService';
 
+// CRUD page for users: search, filter, edit, toggle status, delete, bulk import
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function UserManagement() {
   const [importResult, setImportResult] = useState(null);
   const [importing, setImporting] = useState(false);
 
+  // Load users from the backend into local state
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -43,6 +45,7 @@ export default function UserManagement() {
     }
   };
 
+  // Flash a success banner for a few seconds
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 3000);
@@ -52,6 +55,7 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
+  // Parse a CSV string into an array of row-objects keyed by header name
   const parseCSV = (text) => {
     const lines = text.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length < 2) return [];
@@ -65,8 +69,10 @@ export default function UserManagement() {
     });
   };
 
+  // Trigger the hidden CSV file input
   const handleCSVPick = () => fileInputRef.current?.click();
 
+  // Read the picked CSV, send it to the bulk-create endpoint, show the result
   const handleCSVFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -102,6 +108,7 @@ export default function UserManagement() {
     }
   };
 
+  // Download a sample CSV that shows the expected columns
   const downloadTemplate = () => {
     const csv = 'name,email,password,role,studentId,section,gradeLevel,department\n' +
                 'Juan Dela Cruz,juan@school.edu,changeme123,student,2025-0001,Grade 10-A,Grade 10,\n' +
@@ -115,11 +122,13 @@ export default function UserManagement() {
     URL.revokeObjectURL(url);
   };
 
+  // Open the edit modal pre-filled with this user
   const handleEditClick = (user) => {
     setEditingUser({ ...user });
     setIsEditModalOpen(true);
   };
 
+  // Persist the edited user fields
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -144,6 +153,7 @@ export default function UserManagement() {
     }
   };
 
+  // Flip a user's active/inactive flag
   const handleToggleStatus = async (id) => {
     try {
       await userService.toggleUserStatus(id);
@@ -153,6 +163,7 @@ export default function UserManagement() {
     }
   };
 
+  // Permanently delete a user (with browser confirm)
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
     try {
@@ -164,6 +175,7 @@ export default function UserManagement() {
     }
   };
 
+  // Submit the create-user form
   const handleCreate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -192,6 +204,7 @@ export default function UserManagement() {
     return matchesSearch && matchesRole;
   });
 
+  // Color the role pill based on which role it is
   const getRoleStyle = (role) => {
     const r = (role || '').toLowerCase();
     if (r === 'teacher') return 'bg-purple-100 text-purple-700';
@@ -199,6 +212,7 @@ export default function UserManagement() {
     return 'bg-blue-100 text-blue-700';
   };
 
+  // Show section/grade for students, department for staff
   const getGroupLabel = (u) => {
     if (u.role === 'student') return u.section || u.gradeLevel || '—';
     return u.department || '—';
@@ -526,6 +540,7 @@ export default function UserManagement() {
   );
 }
 
+// Labeled form-field wrapper
 function Field({ label, required, children }) {
   return (
     <div>
