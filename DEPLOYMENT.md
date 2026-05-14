@@ -1,0 +1,133 @@
+# Deploying Attend IT to MongoDB Atlas + Render
+
+Your manuscript architecture: **React (frontend) → MongoDB Atlas (DB) → Render (server host)**.
+
+This guide assumes the code is already in a GitHub repository. If not, do that first
+(`git init`, push to a new GitHub repo).
+
+---
+
+## Part 1 — MongoDB Atlas
+
+Free tier (M0) is enough for a capstone demo.
+
+1. Go to https://www.mongodb.com/cloud/atlas and sign up / log in.
+2. **Create a cluster** → choose **M0 Free** → pick the region closest to you (or to Render's region — Singapore/Oregon are common).
+3. **Database Access** (left sidebar) → **Add New Database User**:
+   - Authentication method: **Password**
+   - Username: e.g. `attendit-app`
+   - Password: click "Autogenerate Secure Password" → **copy it now**, you won't see it again.
+   - Built-in role: **Read and write to any database**
+4. **Network Access** → **Add IP Address** → **Allow Access from Anywhere** (`0.0.0.0/0`).
+   - Required because Render's outbound IPs are dynamic. Your DB is still protected by username+password.
+5. **Database** → **Connect** → **Drivers** → copy the connection string. It looks like:
+   ```
+   mongodb+srv://attendit-app:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   ```
+6. Replace `<password>` with the password from step 3, and add the database name `attend_it` after the host:
+   ```
+   mongodb+srv://attendit-app:YOURPASS@cluster0.xxxxx.mongodb.net/attend_it?retryWrites=true&w=majority
+   ```
+   Keep this string safe — you'll paste it into Render as `MONGO_URI`.
+
+> **If you previously committed the leaked example connection string**, rotate the password
+> in Atlas now (Database Access → Edit the user → reset password) so the old one stops working.
+
+### Seed the Atlas database (optional but recommended for your demo)
+
+You can use the existing `seed.js`. Temporarily point your local `.env` at Atlas:
+
+```bash
+# attendit-backend/.env  (local file — already gitignored)
+MONGO_URI=mongodb+srv://attendit-app:YOURPASS@cluster0.xxxxx.mongodb.net/attend_it?retryWrites=true&w=majority
+JWT_SECRET=anything_for_local
+```
+
+Then run:
+
+```bash
+cd attendit-backend
+npm run seed
+```
+
+You should see the three test users created. Switch the local `.env` back to `mongodb://localhost:27017/attend_it` afterwards if you want to keep developing offline.
+
+---
+
+## Part 2 — Render deployment
+
+You'll create two services: one for the API (Node web service), one for the frontend (Static Site).
+
+### 2a. One-click via Blueprint (recommended)
+
+There's a `render.yaml` at the repo root that describes both services.
+
+1. Go to https://dashboard.render.com → **New** → **Blueprint**.
+2. Connect your GitHub account and pick the repo.
+3. Render reads `render.yaml` and proposes **attendit-backend** + **attendit-web**.
+4. It will ask you to fill in the secret env vars before applying:
+   - **attendit-backend → MONGO_URI** = the Atlas connection string from Part 1.
+   - **attendit-backend → JWT_SECRET** = a long random string. Generate one with:
+     ```bash
+     node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+     ```
+   - **attendit-backend → CLIENT_ORIGIN** = leave blank for now, we'll fill it in step 5.
+   - **attendit-web → VITE_API_URL** = leave blank for now, we'll fill it in step 5.
+5. Click **Apply**. Render starts building. The backend will deploy first.
+6. After the backend deploys, copy its URL (something like `https://attendit-backend.onrender.com`).
+7. Edit **attendit-web → VITE_API_URL** = `https://attendit-backend.onrender.com/api` → trigger a redeploy.
+8. After the frontend deploys, copy its URL (something like `https://attendit-web.onrender.com`).
+9. Edit **attendit-backend → CLIENT_ORIGIN** = the frontend URL → trigger a redeploy.
+
+You now have:
+- API at `https://attendit-backend.onrender.com`
+- Web at `https://attendit-web.onrender.com`
+
+### 2b. Manual setup (if you skip the blueprint)
+
+**Backend (Web Service)**
+| Setting | Value |
+|---|---|
+| Environment | Node |
+| Root Directory | `attendit-backend` |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+| Health Check Path | `/api/health` |
+| Env Vars | `MONGO_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`, `NODE_ENV=production` |
+
+**Frontend (Static Site)**
+| Setting | Value |
+|---|---|
+| Root Directory | `attend_it-web` |
+| Build Command | `npm install && npm run build` |
+| Publish Directory | `dist` |
+| Env Vars | `VITE_API_URL=https://<your-backend>.onrender.com/api` |
+| Rewrite Rule | Source `/*` → Destination `/index.html` (SPA fallback) |
+
+---
+
+## Part 3 — Bootstrap the admin account
+
+Visit your frontend URL → `/signup`. The first account you create is automatically promoted to **admin** (this is built into the signup controller). After that, public admin signup is blocked, so subsequent admins must be created from inside the app by an existing admin via User Management.
+
+---
+
+## Part 4 — Free-tier gotchas to know about for your defense
+
+- **Cold starts:** Render's free web service sleeps after ~15 minutes of inactivity. The first request after a sleep takes ~30–60 s to wake the container. The frontend (static site) does not sleep.
+- **Atlas inactivity:** free clusters pause after long inactivity but resume on the first query.
+- **Logs:** check the Logs tab on each Render service if something doesn't work. The backend health check at `/api/health` should return `{"status":"ok","db":"connected"}`.
+
+---
+
+## Local dev still works the same way
+
+Your local `.env` files are gitignored. Production env vars live in Render. Nothing about how you run things locally changed:
+
+```bash
+# Terminal 1
+cd attendit-backend && npm run dev
+
+# Terminal 2
+cd attend_it-web && npm run dev
+```
