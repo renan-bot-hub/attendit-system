@@ -7,28 +7,35 @@ import { SchoolProvider } from './context/SchoolContext';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 
-import AdminDashboard from './pages/dashboards/AdminDashboard';
+import AdminDashboard   from './pages/dashboards/AdminDashboard';
 import TeacherDashboard from './pages/dashboards/TeacherDashboard';
-import StudentDashboard from './pages/dashboards/StudentDashboard';
+import StaffDashboard   from './pages/dashboards/StaffDashboard';
 
-import UserManagement from './pages/admin/UserManagement';
-import SystemConfig from './pages/admin/SystemConfig';
+import UserManagement    from './pages/admin/UserManagement';
+import SystemConfig      from './pages/admin/SystemConfig';
+import StudentManagement from './pages/admin/StudentManagement';
 
-import TakeAttendance from './pages/attendance/TakeAttendance';
+import TakeAttendance   from './pages/attendance/TakeAttendance';
 import AttendanceLedger from './pages/attendance/AttendanceLedger';
 
-import Inbox from './pages/messages/Inbox';
-import CaseManager from './pages/messages/CaseManager';
+import Threads      from './pages/messages/Threads';
+import CaseManager  from './pages/messages/CaseManager';
+import ParentDocuments from './pages/messages/ParentDocuments';
+import Announcements   from './pages/messages/Announcements';
 
-import Analytics from './pages/reports/Analytics';
-import Reports from './pages/reports/Reports';
+import AIAlerts      from './pages/reports/AIAlerts';
+import Analytics     from './pages/reports/Analytics';
+import Reports       from './pages/reports/Reports';
+import CriticalCases from './pages/staff/CriticalCases';
+import Conferences   from './pages/staff/Conferences';
 
 import Profile from './pages/profile/Profile';
 import NotFound from './pages/NotFound';
 
-const ADMIN = ['admin'];
-const STAFF = ['admin', 'teacher'];
-const ALL   = ['admin', 'teacher', 'student'];
+const ADMIN     = ['admin'];
+const STAFF_POD = ['admin', 'staff'];
+const TEACHERS  = ['admin', 'teacher'];
+const ALL       = ['admin', 'teacher', 'staff'];
 
 // Root component: wires up routing, the school-settings provider, and role guards
 export default function App() {
@@ -45,22 +52,30 @@ export default function App() {
             {/* Role-specific dashboards */}
             <Route path="/admin"   element={<RoleRoute roles={ADMIN}><AdminDashboard /></RoleRoute>} />
             <Route path="/teacher" element={<RoleRoute roles={['teacher']}><TeacherDashboard /></RoleRoute>} />
-            <Route path="/student" element={<RoleRoute roles={['student']}><StudentDashboard /></RoleRoute>} />
+            <Route path="/staff"   element={<RoleRoute roles={['staff']}><StaffDashboard /></RoleRoute>} />
 
             {/* Admin-only */}
-            <Route path="/users"  element={<RoleRoute roles={ADMIN}><UserManagement /></RoleRoute>} />
-            <Route path="/config" element={<RoleRoute roles={ADMIN}><SystemConfig /></RoleRoute>} />
+            <Route path="/users"    element={<RoleRoute roles={ADMIN}><UserManagement /></RoleRoute>} />
+            <Route path="/students" element={<RoleRoute roles={ADMIN}><StudentManagement /></RoleRoute>} />
+            <Route path="/config"   element={<RoleRoute roles={ADMIN}><SystemConfig /></RoleRoute>} />
 
-            {/* Staff-only */}
-            <Route path="/attendance" element={<RoleRoute roles={STAFF}><TakeAttendance /></RoleRoute>} />
-            <Route path="/analytics"  element={<RoleRoute roles={STAFF}><Analytics /></RoleRoute>} />
-            <Route path="/reports"    element={<RoleRoute roles={STAFF}><Reports /></RoleRoute>} />
+            {/* Teacher / admin */}
+            <Route path="/attendance" element={<RoleRoute roles={TEACHERS}><TakeAttendance /></RoleRoute>} />
+            <Route path="/ai-alerts"  element={<RoleRoute roles={ALL}><AIAlerts /></RoleRoute>} />
+            <Route path="/analytics"  element={<RoleRoute roles={ALL}><Analytics /></RoleRoute>} />
+            <Route path="/reports"    element={<RoleRoute roles={ALL}><Reports /></RoleRoute>} />
+            <Route path="/documents"  element={<RoleRoute roles={ALL}><ParentDocuments /></RoleRoute>} />
 
-            {/* Everyone */}
-            <Route path="/ledger"  element={<RoleRoute roles={ALL}><AttendanceLedger /></RoleRoute>} />
-            <Route path="/inbox"   element={<RoleRoute roles={ALL}><Inbox /></RoleRoute>} />
-            <Route path="/cases"   element={<RoleRoute roles={ALL}><CaseManager /></RoleRoute>} />
-            <Route path="/profile" element={<RoleRoute roles={ALL}><Profile /></RoleRoute>} />
+            {/* Staff / POD */}
+            <Route path="/critical-cases" element={<RoleRoute roles={STAFF_POD}><CriticalCases /></RoleRoute>} />
+            <Route path="/conferences"    element={<RoleRoute roles={STAFF_POD}><Conferences /></RoleRoute>} />
+
+            {/* Everyone authenticated */}
+            <Route path="/ledger"        element={<RoleRoute roles={ALL}><AttendanceLedger /></RoleRoute>} />
+            <Route path="/inbox"         element={<RoleRoute roles={ALL}><Threads /></RoleRoute>} />
+            <Route path="/cases"         element={<RoleRoute roles={ALL}><CaseManager /></RoleRoute>} />
+            <Route path="/announcements" element={<RoleRoute roles={ALL}><Announcements /></RoleRoute>} />
+            <Route path="/profile"       element={<RoleRoute roles={ALL}><Profile /></RoleRoute>} />
 
             {/* Default landing after login */}
             <Route index element={<RoleHome />} />
@@ -77,7 +92,8 @@ export default function App() {
 function RoleHome() {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin')   return <Navigate to="/admin" replace />;
+  if (user.role === 'admin')   return <Navigate to="/admin"   replace />;
+  if (user.role === 'staff')   return <Navigate to="/staff"   replace />;
   if (user.role === 'teacher') return <Navigate to="/teacher" replace />;
-  return <Navigate to="/student" replace />;
+  return <Navigate to="/login" replace />;
 }

@@ -1,86 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { Search, X, Check, Edit2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, X, Check, Edit2, Filter } from 'lucide-react';
 import { attendService } from '../../services/attendService';
 
-// Authoritative log of all attendance records, with a per-row "correct entry" modal
+// Attendance Records (manuscript Fig. 9). Adds: status filter, section filter,
+// "Marked By" column (Scan vs Manual). Inline correction modal keeps the
+// existing per-row workflow.
 export default function AttendanceLedger() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // State for the correction modal
-  const [editingEntry, setEditingEntry] = useState(null);
-  const [newStatus, setNewStatus] = useState('');
 
-  // Load all attendance records for the current user's scope
+  const [search, setSearch]           = useState('');
+  const [statusFilter, setStatus]     = useState('All');
+  const [sectionFilter, setSection]   = useState('All');
+  const [markedByFilter, setMarkedBy] = useState('All');
+
+  const [editing, setEditing] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const fetchAttendanceRecords = async () => {
     try {
       const res = await attendService.getLedger();
       setEntries(res.data);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load attendance records.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAttendanceRecords();
-  }, []);
+  useEffect(() => { fetchAttendanceRecords(); }, []);
 
-  // Color-code the status pills
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Present':
-        return 'bg-green-100 text-green-700';
-      case 'Absent':
-        return 'bg-red-100 text-red-700';
-      case 'Late':
-        return 'bg-amber-100 text-amber-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
-    }
-  };
+  const sections = useMemo(() => {
+    const set = new Set(entries.map((e) => e.studentId?.section).filter(Boolean));
+    return ['All', ...[...set].sort()];
+  }, [entries]);
 
-  // Format a Date string as MM/DD/YYYY
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+  const filtered = useMemo(() => {
+    return entries.filter((entry) => {
+      const studentName = entry.studentId?.name || '';
+      const date = entry.timestamp ? new Date(entry.timestamp).toLocaleDateString('en-US') : '';
+      const matchesSearch = studentName.toLowerCase().includes(search.toLowerCase()) || date.includes(search);
+      const matchesStatus  = statusFilter   === 'All' || entry.status   === statusFilter;
+      const matchesSection = sectionFilter  === 'All' || entry.studentId?.section === sectionFilter;
+      const matchesMarked  = markedByFilter === 'All' || entry.markedBy === markedByFilter;
+      return matchesSearch && matchesStatus && matchesSection && matchesMarked;
     });
-  };
+  }, [entries, search, statusFilter, sectionFilter, markedByFilter]);
 
-  // Filter entries based on search input
-  const filteredEntries = entries.filter(entry => {
-    const studentName = entry.studentId?.name || '';
-    const date = entry.timestamp ? formatDate(entry.timestamp) : '';
-    return (
-      studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      date.includes(searchTerm)
-    );
-  });
+  const statusStyle = (s) => ({
+    Present: 'bg-emerald-100 text-emerald-700',
+    Late:    'bg-amber-100 text-amber-700',
+    Absent:  'bg-rose-100 text-rose-700',
+  }[s] || 'bg-slate-100 text-slate-700');
 
-  // Open the per-row correction modal
+  const markedStyle = (m) => ({
+    Scan:   'bg-violet-100 text-violet-700',
+    Manual: 'bg-blue-100 text-blue-700',
+    Auto:   'bg-slate-100 text-slate-600',
+  }[m] || 'bg-slate-100 text-slate-600');
+
   const openCorrectionModal = (entry) => {
-    setEditingEntry(entry);
+    setEditing(entry);
     setNewStatus(entry.status);
   };
 
-  const [saving, setSaving] = useState(false);
-  // Persist the corrected status to the backend
   const handleSaveCorrection = async () => {
-    if (!editingEntry || !newStatus) return;
+    if (!editing || !newStatus) return;
     setSaving(true);
     try {
-      const res = await attendService.correctEntry(editingEntry._id, newStatus);
-      setEntries(entries.map(entry =>
-        entry._id === editingEntry._id ? res.data : entry
-      ));
-      setEditingEntry(null);
+      const res = await attendService.correctEntry(editing._id, newStatus);
+      setEntries((cur) => cur.map((e) => (e._id === editing._id ? res.data : e)));
+      setEditing(null);
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save correction.');
@@ -90,137 +83,126 @@ export default function AttendanceLedger() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      {/* Header */}
+    <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Attendance Ledger</h1>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Attendance Records</h1>
         <p className="text-slate-500 mt-2">The official authoritative record of all attendance data.</p>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{error}</div>
-      )}
+      {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{error}</div>}
 
-      {/* Main Container */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        
-        {/* Toolbar (Search) */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <div className="relative w-72">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search student or date..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              placeholder="Search student or date…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
+          <div className="flex items-center gap-1 text-xs text-slate-400 font-bold uppercase tracking-wider">
+            <Filter className="w-3 h-3" /> Filters
+          </div>
+          <select value={statusFilter} onChange={(e) => setStatus(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="All">All Status</option>
+            <option>Present</option>
+            <option>Late</option>
+            <option>Absent</option>
+          </select>
+          <select value={sectionFilter} onChange={(e) => setSection(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {sections.map((s) => <option key={s}>{s}</option>)}
+          </select>
+          <select value={markedByFilter} onChange={(e) => setMarkedBy(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="All">All Sources</option>
+            <option>Scan</option>
+            <option>Manual</option>
+            <option>Auto</option>
+          </select>
         </div>
 
-        {loading ? (
-          <div className="p-8 text-center text-slate-500">Loading attendance records...</div>
-        ) : (
+        {loading ? <p className="p-8 text-center text-slate-500">Loading attendance records…</p>
+        : (
           <>
-            {/* Table Header */}
-            <div className="grid grid-cols-4 gap-4 p-4 border-b border-slate-100 bg-white text-xs font-bold text-slate-500 uppercase tracking-wider">
-              <div>Date</div>
-              <div>Student</div>
-              <div>Status</div>
-              <div className="text-right">Action</div>
+            <div className="grid grid-cols-12 gap-3 p-4 border-b border-slate-100 bg-white text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <div className="col-span-2">Date</div>
+              <div className="col-span-3">Student</div>
+              <div className="col-span-2">Section</div>
+              <div className="col-span-2">Status</div>
+              <div className="col-span-1">Marked By</div>
+              <div className="col-span-2 text-right">Action</div>
             </div>
 
-            {/* Table Body */}
             <div className="divide-y divide-slate-100">
-              {filteredEntries.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 text-sm">
-                  No records found.
-                </div>
-              ) : (
-                filteredEntries.map((entry) => (
-                  <div key={entry._id} className="grid grid-cols-4 gap-4 p-4 items-center hover:bg-slate-50 transition-colors">
-                    <div className="text-sm text-slate-600 font-medium">
-                      {entry.timestamp ? formatDate(entry.timestamp) : '—'}
-                    </div>
-                    <div className="text-sm font-bold text-slate-900">
-                      {entry.studentId?.name || '—'}
-                    </div>
-                    <div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusStyle(entry.status)}`}>
-                        {entry.status}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <button 
-                        onClick={() => openCorrectionModal(entry)}
-                        className="text-blue-600 font-bold text-sm hover:text-blue-800 transition-colors inline-flex items-center"
-                      >
-                        <Edit2 className="w-3 h-3 mr-1.5" /> Correct Entry
-                      </button>
-                    </div>
+              {filtered.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-sm">No records found.</div>
+              ) : filtered.map((entry) => (
+                <div key={entry._id} className="grid grid-cols-12 gap-3 p-4 items-center hover:bg-slate-50 transition-colors text-sm">
+                  <div className="col-span-2 text-slate-600 font-medium">
+                    {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString('en-US') : '—'}
                   </div>
-                ))
-              )}
+                  <div className="col-span-3 font-bold text-slate-900 truncate">{entry.studentId?.name || '—'}</div>
+                  <div className="col-span-2 text-slate-600">{entry.studentId?.section || '—'}</div>
+                  <div className="col-span-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyle(entry.status)}`}>{entry.status}</span>
+                  </div>
+                  <div className="col-span-1">
+                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${markedStyle(entry.markedBy || 'Manual')}`}>
+                      {entry.markedBy || 'Manual'}
+                    </span>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <button onClick={() => openCorrectionModal(entry)}
+                      className="text-blue-600 font-bold text-sm hover:text-blue-800 inline-flex items-center">
+                      <Edit2 className="w-3 h-3 mr-1.5" /> Correct
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         )}
       </div>
 
-      {/* Correction Modal Overlay */}
-      {editingEntry && (
+      {editing && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-200">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-900">Correct Attendance Record</h3>
-              <button onClick={() => setEditingEntry(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
-            
             <div className="mb-6 space-y-4">
               <div>
                 <p className="text-xs text-slate-500 font-bold uppercase">Student</p>
-                <p className="text-slate-900 font-medium">{editingEntry.studentId?.name || '—'}</p>
+                <p className="text-slate-900 font-medium">{editing.studentId?.name || '—'}</p>
+                <p className="text-xs text-slate-500">{editing.studentId?.section || '—'} • Originally {editing.markedBy || 'Manual'}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-bold uppercase mb-2">New Status</p>
                 <div className="flex gap-2">
-                  {['Present', 'Absent', 'Late'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => setNewStatus(status)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-bold border ${
-                        newStatus === status 
-                          ? 'bg-blue-50 border-blue-500 text-blue-700' 
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
+                  {['Present', 'Late', 'Absent'].map((status) => (
+                    <button key={status} onClick={() => setNewStatus(status)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-bold border ${newStatus === status ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                       {status}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3 justify-end mt-6">
-              <button 
-                onClick={() => setEditingEntry(null)}
-                className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveCorrection}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 transition-colors flex items-center shadow-sm"
-              >
-                <Check className="w-4 h-4 mr-1.5" /> {saving ? 'Saving...' : 'Save Correction'}
+              <button onClick={() => setEditing(null)} className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
+              <button onClick={handleSaveCorrection} disabled={saving} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 flex items-center shadow-sm">
+                <Check className="w-4 h-4 mr-1.5" /> {saving ? 'Saving…' : 'Save Correction'}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

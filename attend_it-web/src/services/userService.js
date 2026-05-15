@@ -28,4 +28,7 @@ export const userService = {
 
   // Admin: permanently delete a user
   deleteUser: async (id) => API.delete(`/users/${id}`),
+
+  // Admin: mint a fresh QR token for a student (used when an ID card is lost)
+  regenerateQr: async (id) => API.post(`/users/${id}/regenerate-qr`),
 };

@@ -19,7 +19,9 @@ exports.signup = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
-    // First user auto-becomes admin (bootstrap); after that admin signup is blocked
+    // First user auto-becomes admin (bootstrap); after that admin signup is blocked.
+    // Web roles per manuscript: admin / teacher / staff (Prefect of Discipline).
+    // Students are data-only records — parents use the mobile app; students don't log in.
     const userCount = await User.countDocuments();
     let finalRole = role || 'teacher';
     if (userCount === 0) {
@@ -27,8 +29,8 @@ exports.signup = async (req, res) => {
     } else if (finalRole === 'admin') {
       return res.status(403).json({ msg: 'Admin accounts can only be created by an existing administrator.' });
     }
-    if (!['student', 'teacher', 'admin'].includes(finalRole)) {
-      return res.status(400).json({ msg: 'Invalid role' });
+    if (!['teacher', 'staff'].includes(finalRole) && userCount !== 0) {
+      return res.status(400).json({ msg: 'Web signup is restricted to teacher and staff (Prefect of Discipline) accounts.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -37,6 +39,8 @@ exports.signup = async (req, res) => {
       email,
       password: hashedPassword,
       role: finalRole,
+      // Student-only fields are never set from web signup; included only if the
+      // bootstrap admin somehow used them (defensive, not expected).
       studentId: studentId || null,
       section: section || null,
       gradeLevel: gradeLevel || null,

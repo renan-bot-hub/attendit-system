@@ -122,23 +122,10 @@ export default function Profile() {
             <input type="email" className="profile-input" value={me.email}
               onChange={(e) => setMe({ ...me, email: e.target.value })} />
           </Field>
-          {me.role === 'student' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Section">
-                <input className="profile-input" value={me.section || ''}
-                  onChange={(e) => setMe({ ...me, section: e.target.value })} />
-              </Field>
-              <Field label="Grade Level">
-                <input className="profile-input" value={me.gradeLevel || ''}
-                  onChange={(e) => setMe({ ...me, gradeLevel: e.target.value })} />
-              </Field>
-            </div>
-          ) : (
-            <Field label="Department">
-              <input className="profile-input" value={me.department || ''}
-                onChange={(e) => setMe({ ...me, department: e.target.value })} />
-            </Field>
-          )}
+          <Field label="Department">
+            <input className="profile-input" value={me.department || ''}
+              onChange={(e) => setMe({ ...me, department: e.target.value })} />
+          </Field>
           <div className="flex justify-end">
             <button type="submit" disabled={savingProfile}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold rounded-lg text-sm flex items-center gap-2">

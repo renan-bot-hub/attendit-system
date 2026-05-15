@@ -1,13 +1,29 @@
 const Attendance = require('../models/Attendance');
 const Session = require('../models/Session');
 const User = require('../models/User');
+const Settings = require('../models/Settings');
+
+// Load (or lazily create) the singleton settings document — used by every risk
+// calculation so admins can re-tune thresholds without redeploying.
+async function loadSettings() {
+  let s = await Settings.findOne({ key: 'global' });
+  if (!s) s = await Settings.create({ key: 'global' });
+  return s;
+}
+
+// Convert an attendance rate into a risk tier based on configured bands.
+function classifyRate(rate, s) {
+  if (rate < s.attendanceCriticalBelow) return 'Critical';
+  if (rate < s.attendanceHighRiskBelow) return 'High Risk';
+  if (rate < s.attendanceModerateBelow) return 'Moderate';
+  return 'Low Risk';
+}
 
 // POST /api/attendance/manual  — teacher manually submits attendance list
 exports.submitManual = async (req, res) => {
   const { sessionId, records } = req.body;
-  // records = [{ studentId, status }, ...]
 
-  if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+  if (!['teacher', 'admin', 'staff'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
 
@@ -19,11 +35,17 @@ exports.submitManual = async (req, res) => {
     const session = await Session.findById(sessionId);
     if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    // Upsert each record (insert or update if already exists)
+    // Upsert each record — the manual screen always tags rows as 'Manual'
     const ops = records.map(({ studentId, status }) => ({
       updateOne: {
         filter: { studentId, sessionId },
-        update: { $set: { studentId, sessionId, status, timestamp: new Date() } },
+        update: {
+          $set: {
+            studentId, sessionId, status,
+            markedBy: 'Manual',
+            timestamp: new Date(),
+          },
+        },
         upsert: true,
       },
     }));
@@ -37,24 +59,33 @@ exports.submitManual = async (req, res) => {
   }
 };
 
-// GET /api/attendance/ledger  — fetch attendance records
+// GET /api/attendance/ledger  — fetch attendance records with optional filters
+// Supports query params: sessionId, studentId, status, section, markedBy, from, to
 exports.getLedger = async (req, res) => {
-  const { sessionId, studentId } = req.query;
+  const { sessionId, studentId, status, markedBy, from, to } = req.query;
 
   try {
     const filter = {};
     if (sessionId) filter.sessionId = sessionId;
     if (studentId) filter.studentId = studentId;
-
-    // Students only see their own records
-    if (req.user.role === 'student') {
-      filter.studentId = req.user.id;
+    if (status)    filter.status    = status;
+    if (markedBy)  filter.markedBy  = markedBy;
+    if (from || to) {
+      filter.timestamp = {};
+      if (from) filter.timestamp.$gte = new Date(from);
+      if (to)   filter.timestamp.$lte = new Date(to);
     }
 
-    const records = await Attendance.find(filter)
-      .populate('studentId', 'name email studentId section')
-      .populate('sessionId', 'className section date')
+    let records = await Attendance.find(filter)
+      .populate('studentId', 'name email studentId section gradeLevel')
+      .populate('sessionId', 'className section date subject')
       .sort({ timestamp: -1 });
+
+    // Section filter happens after populate (section lives on the student record)
+    if (req.query.section) {
+      const wanted = String(req.query.section).toLowerCase();
+      records = records.filter((r) => (r.studentId?.section || '').toLowerCase() === wanted);
+    }
 
     res.json(records);
   } catch (err) {
@@ -63,9 +94,9 @@ exports.getLedger = async (req, res) => {
   }
 };
 
-// PATCH /api/attendance/:id  — correct a single attendance entry (teacher/admin only)
+// PATCH /api/attendance/:id  — correct a single attendance entry (teacher/admin/staff)
 exports.correctEntry = async (req, res) => {
-  if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+  if (!['teacher', 'admin', 'staff'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
 
@@ -77,11 +108,11 @@ exports.correctEntry = async (req, res) => {
   try {
     const updated = await Attendance.findByIdAndUpdate(
       req.params.id,
-      { status, timestamp: new Date() },
+      { status, markedBy: 'Manual', timestamp: new Date() },
       { new: true }
     )
-      .populate('studentId', 'name email studentId section')
-      .populate('sessionId', 'className section date');
+      .populate('studentId', 'name email studentId section gradeLevel')
+      .populate('sessionId', 'className section date subject');
 
     if (!updated) return res.status(404).json({ message: 'Entry not found' });
     res.json(updated);
@@ -91,42 +122,45 @@ exports.correctEntry = async (req, res) => {
   }
 };
 
-// GET /api/attendance/risk-analysis  — compute at-risk students
+// GET /api/attendance/risk-analysis  — compute per-student risk using Settings bands.
+// Also includes pattern signals (consecutive absences, total absences) so the
+// AI alerts screen can flag specific reasons.
 exports.getRiskAnalysis = async (req, res) => {
   try {
+    const settings = await loadSettings();
     const totalSessions = await Session.countDocuments();
-
-    // If no sessions, return empty array with helpful message
-    if (totalSessions === 0) {
-      return res.json([]);
-    }
+    if (totalSessions === 0) return res.json([]);
 
     const students = await User.find({ role: 'student', isActive: true });
 
     const results = await Promise.all(students.map(async (student) => {
-      const attended = await Attendance.countDocuments({
-        studentId: student._id,
-        status: { $in: ['Present', 'Late'] },
-      });
+      const records = await Attendance.find({ studentId: student._id }).sort({ timestamp: 1 });
+      const attendedCount = records.filter((r) => r.status === 'Present' || r.status === 'Late').length;
+      const absentCount   = records.filter((r) => r.status === 'Absent').length;
+      const lateCount     = records.filter((r) => r.status === 'Late').length;
+      const attendanceRate = Math.round((attendedCount / totalSessions) * 100);
 
-      const attendanceRate = Math.round((attended / totalSessions) * 100);
-
-      let riskLevel = 'Low Risk';
-      if (attendanceRate < 75)      riskLevel = 'Critical';
-      else if (attendanceRate < 85) riskLevel = 'High Risk';
-      else if (attendanceRate < 92) riskLevel = 'Moderate';
+      // Walk the timeline backwards to count current consecutive-absence streak
+      let consecutive = 0;
+      for (let i = records.length - 1; i >= 0; i--) {
+        if (records[i].status === 'Absent') consecutive++;
+        else break;
+      }
 
       return {
         studentId: student._id,
         name: student.name,
         section: student.section,
+        gradeLevel: student.gradeLevel,
         attendanceRate,
-        riskLevel,
+        absentCount,
+        lateCount,
+        consecutiveAbsences: consecutive,
+        riskLevel: classifyRate(attendanceRate, settings),
       };
     }));
 
     results.sort((a, b) => a.attendanceRate - b.attendanceRate);
-
     res.json(results);
   } catch (err) {
     console.error(err);
@@ -149,11 +183,44 @@ exports.getSummary = async (req, res) => {
     res.json({
       totalSessions,
       totalStudents,
-      present,
-      late,
-      absent,
+      present, late, absent,
       overallRate,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET /api/attendance/trend?days=14  — daily attendance rate for charting (Fig. 8 / 20)
+exports.getTrend = async (req, res) => {
+  try {
+    const days = Math.min(parseInt(req.query.days, 10) || 14, 60);
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    const records = await Attendance.find({ timestamp: { $gte: since } });
+    const buckets = new Map();
+    for (let d = 0; d < days; d++) {
+      const day = new Date(since);
+      day.setDate(since.getDate() + d);
+      const key = day.toISOString().slice(0, 10);
+      buckets.set(key, { date: key, present: 0, late: 0, absent: 0 });
+    }
+    for (const r of records) {
+      const key = new Date(r.timestamp).toISOString().slice(0, 10);
+      const b = buckets.get(key);
+      if (!b) continue;
+      if (r.status === 'Present') b.present++;
+      else if (r.status === 'Late') b.late++;
+      else if (r.status === 'Absent') b.absent++;
+    }
+    const trend = [...buckets.values()].map((b) => {
+      const total = b.present + b.late + b.absent;
+      return { ...b, rate: total === 0 ? 0 : Math.round(((b.present + b.late) / total) * 100) };
+    });
+    res.json(trend);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

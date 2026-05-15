@@ -1,12 +1,15 @@
 import API from './api';
 
+// Triggered-thread messaging (manuscript Fig. 12). Threads are container objects
+// — only teachers/staff open them; messages live inside them.
 export const messageService = {
-  // List people you've messaged with, plus last-message preview + unread count
-  getContacts: async () => API.get('/messages/contacts'),
-
-  // Full message thread between you and a partner
-  getThread: async (partnerId) => API.get(`/messages/thread/${partnerId}`),
-
-  // Send a new message to a recipient
-  sendMessage: async (recipientId, text) => API.post('/messages', { recipientId, text }),
+  listThreads:    (params = {}) => API.get('/messages/threads', { params }),
+  createThread:   (data)        => API.post('/messages/threads', data),
+  closeThread:    (id)          => API.patch(`/messages/threads/${id}/close`),
+  reopenThread:   (id)          => API.patch(`/messages/threads/${id}/reopen`),
+  getMessages:    (id)          => API.get(`/messages/threads/${id}/messages`),
+  sendMessage:    (id, text)    => API.post(`/messages/threads/${id}/messages`, { text }),
 };
+
+// Default export keeps older imports working
+export default messageService;

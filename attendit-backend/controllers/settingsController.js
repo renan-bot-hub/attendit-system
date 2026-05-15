@@ -19,7 +19,10 @@ exports.updateSettings = async (req, res) => {
   try {
     const allowed = [
       'schoolName', 'schoolType', 'academicYear',
-      'consecutiveAbsenceThreshold',
+      // Attendance Rules & Thresholds (Fig. 23)
+      'lateCutoffTime', 'autoAbsentTime',
+      'consecutiveAbsenceThreshold', 'warningTotalAbsences', 'criticalTotalAbsences',
+      // Risk bands used by analytics + AI scoring
       'attendanceCriticalBelow', 'attendanceHighRiskBelow', 'attendanceModerateBelow',
       'contactEmail', 'contactPhone', 'address',
     ];

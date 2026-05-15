@@ -3,13 +3,18 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
-const authRoutes       = require('./routes/authRoutes');
-const attendanceRoutes = require('./routes/attendanceRoutes');
-const userRoutes       = require('./routes/userRoutes');
-const sessionRoutes    = require('./routes/sessionRoutes');
-const messageRoutes    = require('./routes/messageRoutes');
-const caseRoutes       = require('./routes/caseRoutes');
-const settingsRoutes   = require('./routes/settingsRoutes');
+const authRoutes         = require('./routes/authRoutes');
+const attendanceRoutes   = require('./routes/attendanceRoutes');
+const userRoutes         = require('./routes/userRoutes');
+const sessionRoutes      = require('./routes/sessionRoutes');
+const messageRoutes      = require('./routes/messageRoutes');
+const caseRoutes         = require('./routes/caseRoutes');
+const settingsRoutes     = require('./routes/settingsRoutes');
+const aiAlertRoutes      = require('./routes/aiAlertRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
+const documentRoutes     = require('./routes/documentRoutes');
+const conferenceRoutes   = require('./routes/conferenceRoutes');
+const sectionRoutes      = require('./routes/sectionRoutes');
 
 const app = express();
 app.set('trust proxy', 1); // required on Render so rate-limit / req.ip work behind the proxy
@@ -51,13 +56,18 @@ app.get('/api/health', (req, res) => {
 });
 
 // 4. ROUTES
-app.use('/api/auth',       authRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/users',      userRoutes);
-app.use('/api/sessions',   sessionRoutes);
-app.use('/api/messages',   messageRoutes);
-app.use('/api/cases',      caseRoutes);
-app.use('/api/settings',   settingsRoutes);
+app.use('/api/auth',          authRoutes);
+app.use('/api/attendance',    attendanceRoutes);
+app.use('/api/users',         userRoutes);
+app.use('/api/sessions',      sessionRoutes);
+app.use('/api/messages',      messageRoutes);
+app.use('/api/cases',         caseRoutes);
+app.use('/api/settings',      settingsRoutes);
+app.use('/api/ai-alerts',     aiAlertRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/documents',     documentRoutes);
+app.use('/api/conferences',   conferenceRoutes);
+app.use('/api/sections',      sectionRoutes);
 
 // 5. CENTRAL ERROR HANDLER
 app.use((err, req, res, next) => {

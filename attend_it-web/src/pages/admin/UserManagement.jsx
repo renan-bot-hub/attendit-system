@@ -209,6 +209,7 @@ export default function UserManagement() {
     const r = (role || '').toLowerCase();
     if (r === 'teacher') return 'bg-purple-100 text-purple-700';
     if (r === 'admin')   return 'bg-amber-100 text-amber-700';
+    if (r === 'staff')   return 'bg-rose-100 text-rose-700';
     return 'bg-blue-100 text-blue-700';
   };
 
@@ -294,9 +295,10 @@ export default function UserManagement() {
             className="border border-slate-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All Roles">All Roles</option>
-            <option value="teacher">Teacher</option>
-            <option value="student">Student</option>
             <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+            <option value="staff">Staff (POD)</option>
+            <option value="student">Student (data-only)</option>
           </select>
         </div>
 
@@ -404,9 +406,10 @@ export default function UserManagement() {
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className="um-input">
-                  <option value="teacher">Teacher</option>
-                  <option value="student">Student</option>
                   <option value="admin">Admin</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="staff">Staff (POD)</option>
+                  <option value="student">Student (data-only)</option>
                 </select>
               </Field>
 
@@ -484,9 +487,10 @@ export default function UserManagement() {
                   value={editingUser.role || 'teacher'}
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                   className="um-input">
-                  <option value="teacher">Teacher</option>
-                  <option value="student">Student</option>
                   <option value="admin">Admin</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="staff">Staff (POD)</option>
+                  <option value="student">Student (data-only)</option>
                 </select>
               </Field>
 

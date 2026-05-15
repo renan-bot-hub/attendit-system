@@ -8,7 +8,7 @@ import { useSchool } from '../../context/useSchool';
 export default function Signup() {
   const [form, setForm] = useState({
     name: '', email: '', password: '', role: 'teacher',
-    studentId: '', section: '', gradeLevel: '', department: '',
+    department: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,7 +62,7 @@ export default function Signup() {
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 className="auth-input">
                 <option value="teacher">Teacher / Faculty</option>
-                <option value="student">Student</option>
+                <option value="staff">Staff (Prefect of Discipline)</option>
               </select>
             </Field>
           </div>
@@ -80,34 +80,15 @@ export default function Signup() {
               className="auth-input" />
           </Field>
 
-          {form.role === 'student' ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field label="Student ID">
-                <input type="text" value={form.studentId}
-                  onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-                  className="auth-input" />
-              </Field>
-              <Field label="Section">
-                <input type="text" value={form.section}
-                  onChange={(e) => setForm({ ...form, section: e.target.value })}
-                  className="auth-input" />
-              </Field>
-              <Field label="Grade Level">
-                <input type="text" value={form.gradeLevel}
-                  onChange={(e) => setForm({ ...form, gradeLevel: e.target.value })}
-                  className="auth-input" />
-              </Field>
-            </div>
-          ) : (
-            <Field label="Department">
-              <input type="text" value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
-                className="auth-input" />
-            </Field>
-          )}
+          <Field label="Department">
+            <input type="text" value={form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+              className="auth-input" />
+          </Field>
 
           <p className="text-xs text-slate-500 italic">
             Administrator accounts can only be created from inside the system by an existing admin.
+            Students are managed as records by the admin (no web login); parents access the system via the mobile app.
           </p>
 
           <button

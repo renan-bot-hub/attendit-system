@@ -9,8 +9,10 @@ export default function RoleRoute({ roles, children }) {
   if (!token || !user) return <Navigate to="/login" replace />;
 
   if (Array.isArray(roles) && roles.length > 0 && !roles.includes(user.role)) {
-    const home = user.role === 'admin' ? '/admin' :
-                 user.role === 'student' ? '/student' : '/teacher';
+    const home =
+      user.role === 'admin'   ? '/admin'   :
+      user.role === 'staff'   ? '/staff'   :
+      user.role === 'teacher' ? '/teacher' : '/login';
     return <Navigate to={home} replace />;
   }
 

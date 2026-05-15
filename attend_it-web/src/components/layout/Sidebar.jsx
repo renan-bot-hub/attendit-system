@@ -3,55 +3,81 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, ClipboardCheck, BookOpen, MessageCircle, FileText,
   BarChart3, Settings, FileBarChart, UserCircle, LogOut, GraduationCap, Menu, X,
+  Sparkles, ShieldAlert, Megaphone, CalendarDays, FolderCheck, IdCard,
 } from 'lucide-react';
 import { useSchool } from '../../context/useSchool';
 
 const ICONS = {
   dashboard: LayoutDashboard,
   users: Users,
+  students: IdCard,
   attendance: ClipboardCheck,
   ledger: BookOpen,
   inbox: MessageCircle,
   cases: FileText,
+  documents: FolderCheck,
+  alerts: Sparkles,
   analytics: BarChart3,
   config: Settings,
   reports: FileBarChart,
   profile: UserCircle,
+  critical: ShieldAlert,
+  conferences: CalendarDays,
+  announcements: Megaphone,
 };
 
+// Role-aware navigation: admin / teacher / staff (Prefect of Discipline)
 const NAV = {
   admin: [
-    { key: 'dashboard', name: 'Dashboard',         path: '/admin' },
-    { key: 'users',     name: 'User Management',   path: '/users' },
-    { key: 'attendance',name: 'Take Attendance',   path: '/attendance' },
-    { key: 'ledger',    name: 'Attendance Ledger', path: '/ledger' },
-    { key: 'inbox',     name: 'Inbox',             path: '/inbox' },
-    { key: 'cases',     name: 'Case Manager',      path: '/cases' },
-    { key: 'analytics', name: 'Analytics Hub',     path: '/analytics' },
-    { key: 'reports',   name: 'Reports',           path: '/reports' },
-    { key: 'config',    name: 'School Settings',   path: '/config' },
-    { key: 'profile',   name: 'My Profile',        path: '/profile' },
+    { key: 'dashboard',     name: 'Dashboard',                  path: '/admin' },
+    { key: 'users',         name: 'User Management',            path: '/users' },
+    { key: 'students',      name: 'Students & Sections',        path: '/students' },
+    { key: 'attendance',    name: 'Take Attendance',            path: '/attendance' },
+    { key: 'ledger',        name: 'Attendance Records',         path: '/ledger' },
+    { key: 'alerts',        name: 'AI Alerts',                  path: '/ai-alerts' },
+    { key: 'cases',         name: 'Cases & Interventions',      path: '/cases' },
+    { key: 'documents',     name: 'Parent Documents',           path: '/documents' },
+    { key: 'inbox',         name: 'Triggered Threads',          path: '/inbox' },
+    { key: 'announcements', name: 'Announcements',              path: '/announcements' },
+    { key: 'analytics',     name: 'Analytics Hub',              path: '/analytics' },
+    { key: 'reports',       name: 'Reports',                    path: '/reports' },
+    { key: 'config',        name: 'School Settings',            path: '/config' },
+    { key: 'profile',       name: 'My Profile',                 path: '/profile' },
   ],
   teacher: [
-    { key: 'dashboard', name: 'Dashboard',         path: '/teacher' },
-    { key: 'attendance',name: 'Take Attendance',   path: '/attendance' },
-    { key: 'ledger',    name: 'Attendance Ledger', path: '/ledger' },
-    { key: 'inbox',     name: 'Inbox',             path: '/inbox' },
-    { key: 'cases',     name: 'Case Manager',      path: '/cases' },
-    { key: 'analytics', name: 'Analytics Hub',     path: '/analytics' },
-    { key: 'reports',   name: 'Reports',           path: '/reports' },
-    { key: 'profile',   name: 'My Profile',        path: '/profile' },
+    { key: 'dashboard',     name: 'Dashboard',                  path: '/teacher' },
+    { key: 'attendance',    name: 'Take Attendance',            path: '/attendance' },
+    { key: 'ledger',        name: 'Attendance Records',         path: '/ledger' },
+    { key: 'alerts',        name: 'AI Alerts',                  path: '/ai-alerts' },
+    { key: 'cases',         name: 'Cases & Interventions',      path: '/cases' },
+    { key: 'documents',     name: 'Parent Documents',           path: '/documents' },
+    { key: 'inbox',         name: 'Triggered Threads',          path: '/inbox' },
+    { key: 'announcements', name: 'Announcements',              path: '/announcements' },
+    { key: 'analytics',     name: 'Analytics Hub',              path: '/analytics' },
+    { key: 'reports',       name: 'Reports',                    path: '/reports' },
+    { key: 'profile',       name: 'My Profile',                 path: '/profile' },
   ],
-  student: [
-    { key: 'dashboard', name: 'Dashboard',         path: '/student' },
-    { key: 'ledger',    name: 'My Attendance',     path: '/ledger' },
-    { key: 'inbox',     name: 'Messages',          path: '/inbox' },
-    { key: 'cases',     name: 'My Cases',          path: '/cases' },
-    { key: 'profile',   name: 'My Profile',        path: '/profile' },
+  staff: [
+    { key: 'dashboard',     name: 'POD Dashboard',              path: '/staff' },
+    { key: 'critical',      name: 'Critical Cases',             path: '/critical-cases' },
+    { key: 'conferences',   name: 'Conferences',                path: '/conferences' },
+    { key: 'cases',         name: 'Cases & Interventions',      path: '/cases' },
+    { key: 'documents',     name: 'Parent Documents',           path: '/documents' },
+    { key: 'inbox',         name: 'Triggered Threads',          path: '/inbox' },
+    { key: 'announcements', name: 'Announcements',              path: '/announcements' },
+    { key: 'alerts',        name: 'AI Alerts',                  path: '/ai-alerts' },
+    { key: 'ledger',        name: 'Attendance Records',         path: '/ledger' },
+    { key: 'reports',       name: 'Reports',                    path: '/reports' },
+    { key: 'profile',       name: 'My Profile',                 path: '/profile' },
   ],
 };
 
-// Role-aware navigation: shows the correct menu for admin/teacher/student
+const ROLE_LABEL = {
+  admin: 'Administrator',
+  teacher: 'Faculty',
+  staff: 'Prefect of Discipline',
+};
+
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,10 +86,9 @@ export default function Sidebar() {
 
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
-  const role = user?.role || 'student';
-  const links = NAV[role] || NAV.student;
+  const role = user?.role || 'teacher';
+  const links = NAV[role] || NAV.teacher;
 
-  // Clear session and return to login
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -73,14 +98,13 @@ export default function Sidebar() {
   const initials = (user?.name || 'U').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const roleAccent = {
-    admin: 'text-amber-400',
+    admin:   'text-amber-400',
     teacher: 'text-blue-400',
-    student: 'text-emerald-400',
+    staff:   'text-rose-400',
   }[role] || 'text-blue-400';
 
   const content = (
     <div className="w-64 bg-slate-900 text-white h-full flex flex-col shadow-2xl">
-      {/* Brand */}
       <div className="p-5 border-b border-slate-800">
         <div className="flex items-center gap-2 mb-1">
           <GraduationCap className="w-7 h-7 text-blue-500" />
@@ -93,7 +117,6 @@ export default function Sidebar() {
         </p>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {links.map((link) => {
           const Icon = ICONS[link.key] || LayoutDashboard;
@@ -116,7 +139,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User */}
       <div className="p-4 border-t border-slate-800">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold">
@@ -125,7 +147,7 @@ export default function Sidebar() {
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate">{user?.name || 'User'}</p>
             <p className={`text-[10px] font-black uppercase tracking-widest ${roleAccent}`}>
-              {role} Access
+              {ROLE_LABEL[role] || role}
             </p>
           </div>
         </div>
@@ -141,7 +163,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-slate-900 text-white px-4 py-3 flex items-center justify-between z-20 shadow-md">
         <div className="flex items-center gap-2">
           <GraduationCap className="w-5 h-5 text-blue-500" />
@@ -152,10 +173,8 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Desktop sidebar */}
       <aside className="hidden md:block">{content}</aside>
 
-      {/* Mobile drawer */}
       {open && (
         <div className="md:hidden fixed inset-0 z-30 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />

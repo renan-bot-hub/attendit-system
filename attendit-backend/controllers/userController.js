@@ -1,13 +1,19 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+// Allowed roles for web (admin, teacher, staff). Students are data-only records;
+// parents use the mobile app and are not represented as login users here.
+const WEB_ROLES   = ['admin', 'teacher', 'staff'];
+const DATA_ROLES  = ['student'];
+const ALL_ROLES   = [...WEB_ROLES, ...DATA_ROLES];
+
 // GET /api/users  — list users (any authenticated user; non-admins get a slim projection)
 exports.getAllUsers = async (req, res) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { isActive: true };
     const projection = req.user.role === 'admin'
       ? '-password'
-      : 'name email role department section gradeLevel studentId isActive';
+      : 'name email role department section gradeLevel studentId parentName parentEmail parentPhone qrCode isActive';
 
     const users = await User.find(filter).select(projection).sort({ createdAt: -1 });
     res.json(users);
@@ -73,22 +79,46 @@ exports.createUser = async (req, res) => {
     return res.status(403).json({ message: 'Admin access required' });
   }
   try {
-    const { name, email, password, role, studentId, section, gradeLevel, department } = req.body;
+    const {
+      name, email, password, role,
+      studentId, section, gradeLevel, department,
+      parentName, parentEmail, parentPhone,
+    } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required' });
+    }
+    if (!ALL_ROLES.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    // Students are data-only — they don't log in. A throwaway password is used so
+    // the schema requirement is met but the record can never authenticate.
+    const isLoginUser = WEB_ROLES.includes(role);
+    if (isLoginUser && (!password || password.length < 6)) {
+      return res.status(400).json({ message: 'Password (min 6) required for staff accounts' });
     }
 
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: 'Email already in use' });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      name, email, password: hashedPassword,
-      role: role || 'teacher',
-      studentId, section, gradeLevel, department,
-    });
+    const hashed = await bcrypt.hash(isLoginUser ? password : User.generateQrToken(), 10);
 
+    const doc = {
+      name, email, password: hashed,
+      role,
+      studentId: studentId || null,
+      section: section || null,
+      gradeLevel: gradeLevel || null,
+      department: department || null,
+      parentName: parentName || null,
+      parentEmail: parentEmail || null,
+      parentPhone: parentPhone || null,
+    };
+    // Auto-mint a QR token for new student records so the mobile scanner has something to read
+    if (role === 'student') doc.qrCode = User.generateQrToken();
+
+    const user = await User.create(doc);
     res.status(201).json({ message: 'User created', user: { ...user.toObject(), password: undefined } });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -96,8 +126,6 @@ exports.createUser = async (req, res) => {
 };
 
 // POST /api/users/bulk  — bulk create users (admin only)
-// body: { users: [{ name, email, password?, role, studentId, section, gradeLevel, department }, ...] }
-// If password is missing for a row, defaults to "changeme123"
 exports.bulkCreate = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -116,6 +144,12 @@ exports.bulkCreate = async (req, res) => {
         results.skipped++;
         continue;
       }
+      const role = (row.role || 'student').toLowerCase();
+      if (!ALL_ROLES.includes(role)) {
+        results.errors.push({ row: i + 1, message: `Invalid role: ${row.role}` });
+        results.skipped++;
+        continue;
+      }
       const exists = await User.findOne({ email: row.email });
       if (exists) {
         results.errors.push({ row: i + 1, message: `Email already exists: ${row.email}` });
@@ -123,16 +157,21 @@ exports.bulkCreate = async (req, res) => {
         continue;
       }
       const hashed = await bcrypt.hash(row.password || 'changeme123', 10);
-      await User.create({
+      const doc = {
         name: row.name,
         email: row.email,
         password: hashed,
-        role: row.role || 'student',
+        role,
         studentId: row.studentId || null,
         section: row.section || null,
         gradeLevel: row.gradeLevel || null,
         department: row.department || null,
-      });
+        parentName: row.parentName || row.parent || null,
+        parentEmail: row.parentEmail || null,
+        parentPhone: row.parentPhone || null,
+      };
+      if (role === 'student') doc.qrCode = User.generateQrToken();
+      await User.create(doc);
       results.created++;
     } catch (err) {
       results.errors.push({ row: i + 1, message: err.message });
@@ -148,10 +187,17 @@ exports.updateUser = async (req, res) => {
     return res.status(403).json({ message: 'Admin access required' });
   }
   try {
-    const { name, email, role, department, section, gradeLevel, studentId } = req.body;
+    const {
+      name, email, role, department, section, gradeLevel, studentId,
+      parentName, parentEmail, parentPhone,
+    } = req.body;
+    if (role && !ALL_ROLES.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, role, department, section, gradeLevel, studentId },
+      { name, email, role, department, section, gradeLevel, studentId,
+        parentName, parentEmail, parentPhone },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -194,5 +240,27 @@ exports.deleteUser = async (req, res) => {
     res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST /api/users/:id/regenerate-qr  — admin only.
+// Mints a fresh QR token for a student. The use case is the manuscript's
+// "lost ID" backup flow: scanning is the mobile primary path, so when a
+// student loses their printed QR the admin issues a new one here.
+exports.regenerateQr = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role !== 'student') {
+      return res.status(400).json({ message: 'QR codes are only issued to student records' });
+    }
+    user.qrCode = User.generateQrToken();
+    await user.save();
+    res.json({ message: 'QR regenerated', qrCode: user.qrCode });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

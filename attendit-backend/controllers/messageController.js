@@ -1,95 +1,171 @@
 const Message = require('../models/Message');
+const Thread = require('../models/Thread');
 const User = require('../models/User');
 
-// POST /api/messages  — send a new message
-exports.sendMessage = async (req, res) => {
+// Triggered-thread messaging (manuscript Fig. 12):
+//   * Only teachers/staff/admin may open a new thread (parent participation
+//     happens via mobile in a thread the teacher already opened).
+//   * Either side can post while status === 'Open'.
+//   * Either teacher or staff can close a thread; parents see "closed" and
+//     can no longer reply on mobile.
+
+// GET /api/threads  — list visible threads for the current user
+exports.listThreads = async (req, res) => {
   try {
-    const { recipientId, text } = req.body;
+    const me = req.user.id;
+    const filter = req.user.role === 'admin' ? {} : {
+      $or: [{ teacher: me }, { parent: me }],
+    };
+    if (req.query.status) filter.status = req.query.status;
+    const threads = await Thread.find(filter)
+      .populate('teacher', 'name role')
+      .populate('parent',  'name role')
+      .populate('student', 'name studentId section gradeLevel parentName parentEmail')
+      .populate('caseRef', 'riskLevel status')
+      .sort({ lastMessageAt: -1 });
 
-    if (!recipientId || !text || !text.trim()) {
-      return res.status(400).json({ message: 'recipientId and text are required' });
-    }
-
-    const recipient = await User.findById(recipientId);
-    if (!recipient) return res.status(404).json({ message: 'Recipient not found' });
-
-    const msg = await Message.create({
-      sender: req.user.id,
-      recipient: recipientId,
-      text: text.trim(),
-    });
-
-    const populated = await msg.populate('sender recipient', 'name email role');
-    res.status(201).json(populated);
+    // Tag each thread with unread count for the current user
+    const enriched = await Promise.all(threads.map(async (t) => {
+      const unread = await Message.countDocuments({
+        thread: t._id,
+        recipient: me,
+        read: false,
+      });
+      return { ...t.toObject(), unread };
+    }));
+    res.json(enriched);
   } catch (err) {
-    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST /api/threads  — teacher opens a thread about a student.
+// body: { studentId, topic, caseRef? }
+exports.createThread = async (req, res) => {
+  if (!['teacher', 'admin', 'staff'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Only teachers and staff can open threads.' });
+  }
+  try {
+    const { studentId, topic, caseRef } = req.body;
+    if (!studentId) return res.status(400).json({ message: 'studentId is required' });
+    const student = await User.findById(studentId);
+    if (!student || student.role !== 'student') {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    // Try to resolve the parent user record by parentEmail (if registered)
+    let parentUser = null;
+    if (student.parentEmail) {
+      parentUser = await User.findOne({ email: student.parentEmail });
+    }
+    const t = await Thread.create({
+      teacher: req.user.id,
+      parent: parentUser ? parentUser._id : null,
+      student: student._id,
+      caseRef: caseRef || null,
+      topic: topic || 'Attendance',
+      status: 'Open',
+      lastMessageAt: new Date(),
+    });
+    res.status(201).json(t);
+  } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// GET /api/messages/contacts  — list distinct conversation partners with last-message preview
-exports.getContacts = async (req, res) => {
+// PATCH /api/threads/:id/close  — close a thread (teacher / staff / admin)
+exports.closeThread = async (req, res) => {
   try {
-    const userId = req.user.id;
-
-    const messages = await Message.find({
-      $or: [{ sender: userId }, { recipient: userId }],
-    })
-      .sort({ createdAt: -1 })
-      .populate('sender recipient', 'name email role');
-
-    const map = new Map();
-    for (const m of messages) {
-      const partner = m.sender._id.toString() === userId ? m.recipient : m.sender;
-      const key = partner._id.toString();
-      if (!map.has(key)) {
-        const unread = await Message.countDocuments({
-          sender: partner._id,
-          recipient: userId,
-          read: false,
-        });
-        map.set(key, {
-          _id: partner._id,
-          name: partner.name,
-          email: partner.email,
-          role: partner.role,
-          lastMessage: m.text,
-          time: m.createdAt,
-          unread,
-        });
-      }
+    const t = await Thread.findById(req.params.id);
+    if (!t) return res.status(404).json({ message: 'Thread not found' });
+    if (req.user.role !== 'admin' && t.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the opening teacher (or an admin) can close this thread' });
     }
-    res.json([...map.values()]);
+    t.status = 'Closed';
+    t.closedBy = req.user.id;
+    t.closedAt = new Date();
+    await t.save();
+    res.json(t);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// GET /api/messages/thread/:partnerId  — conversation between current user and partner
-exports.getThread = async (req, res) => {
+// PATCH /api/threads/:id/reopen  — reopen a closed thread (teacher / staff / admin)
+exports.reopenThread = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { partnerId } = req.params;
+    const t = await Thread.findById(req.params.id);
+    if (!t) return res.status(404).json({ message: 'Thread not found' });
+    if (req.user.role !== 'admin' && t.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the opening teacher (or an admin) can reopen this thread' });
+    }
+    t.status = 'Open';
+    t.closedBy = null;
+    t.closedAt = null;
+    await t.save();
+    res.json(t);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-    const messages = await Message.find({
-      $or: [
-        { sender: userId, recipient: partnerId },
-        { sender: partnerId, recipient: userId },
-      ],
-    })
+// GET /api/threads/:id/messages  — full conversation; marks as read
+exports.getMessages = async (req, res) => {
+  try {
+    const t = await Thread.findById(req.params.id);
+    if (!t) return res.status(404).json({ message: 'Thread not found' });
+    if (req.user.role !== 'admin'
+        && t.teacher.toString() !== req.user.id
+        && (t.parent && t.parent.toString() !== req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this thread' });
+    }
+    const msgs = await Message.find({ thread: t._id })
       .sort({ createdAt: 1 })
-      .populate('sender recipient', 'name role');
-
-    // Mark partner-sent messages as read
+      .populate('sender', 'name role');
     await Message.updateMany(
-      { sender: partnerId, recipient: userId, read: false },
+      { thread: t._id, recipient: req.user.id, read: false },
       { $set: { read: true } }
     );
-
-    res.json(messages);
+    res.json(msgs);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// POST /api/threads/:id/messages  — send a message inside an open thread
+exports.sendMessage = async (req, res) => {
+  try {
+    const t = await Thread.findById(req.params.id);
+    if (!t) return res.status(404).json({ message: 'Thread not found' });
+    if (t.status === 'Closed') {
+      return res.status(400).json({ message: 'Thread is closed' });
+    }
+    const me = req.user.id;
+    const isTeacher = t.teacher.toString() === me;
+    const isParent  = t.parent && t.parent.toString() === me;
+    if (!isTeacher && !isParent && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'You are not a participant in this thread' });
+    }
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ message: 'text is required' });
+    const recipient = isTeacher ? (t.parent || t.teacher) : t.teacher;
+    const msg = await Message.create({
+      thread: t._id,
+      sender: me,
+      recipient,
+      text: text.trim(),
+    });
+    t.lastMessageAt = new Date();
+    await t.save();
+    const populated = await msg.populate('sender', 'name role');
+    res.status(201).json(populated);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// ---- Legacy compatibility shims so older callers don't 404 -------------------
+// Older dashboards used getContacts/getThread/sendMessage at /api/messages.
+// We keep them as no-ops returning empty payloads so the dashboard still loads.
+exports.legacyContacts = async (_req, res) => res.json([]);
+exports.legacyThread   = async (_req, res) => res.json([]);
+exports.legacySend     = async (_req, res) => res.status(410).json({ message: 'Replaced by triggered threads — use POST /api/threads' });

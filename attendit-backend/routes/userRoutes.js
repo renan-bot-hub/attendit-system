@@ -9,6 +9,7 @@ const {
   updateUser,
   toggleUserStatus,
   deleteUser,
+  regenerateQr,
 } = require('../controllers/userController');
 const auth = require('../middleware/authMiddleware');
 
@@ -20,6 +21,7 @@ router.post('/',          auth, createUser);
 router.post('/bulk',      auth, bulkCreate);
 router.put('/:id',        auth, updateUser);
 router.patch('/:id/toggle-status', auth, toggleUserStatus);
+router.post('/:id/regenerate-qr',  auth, regenerateQr);
 router.delete('/:id',     auth, deleteUser);
 
 module.exports = router;

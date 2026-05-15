@@ -5,6 +5,7 @@ const {
   correctEntry,
   getRiskAnalysis,
   getSummary,
+  getTrend,
 } = require('../controllers/attendanceController');
 const auth = require('../middleware/authMiddleware');
 
@@ -13,5 +14,6 @@ router.get('/ledger', auth, getLedger);
 router.patch('/:id', auth, correctEntry);
 router.get('/risk-analysis', auth, getRiskAnalysis);
 router.get('/summary', auth, getSummary);
+router.get('/trend', auth, getTrend);
 
 module.exports = router;

@@ -21,9 +21,13 @@ export default function Login() {
 
     try {
       const data = await authService.login({ email, password });
-      if (data.user.role === 'admin') navigate('/admin');
+      if (data.user.role === 'admin')      navigate('/admin');
+      else if (data.user.role === 'staff') navigate('/staff');
       else if (data.user.role === 'teacher') navigate('/teacher');
-      else navigate('/student');
+      else {
+        setError('Web login is restricted to admin, teacher, and staff accounts.');
+        authService.logout();
+      }
     } catch (err) {
       setError(err.response?.data?.msg || 'Login failed. Please check your credentials.');
     } finally {

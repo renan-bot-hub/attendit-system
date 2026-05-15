@@ -4,63 +4,64 @@ require('dotenv').config();
 
 const User = require('./models/User');
 
-// Wipes the users collection and inserts three test accounts (admin/teacher/student)
+// Seeds the four web roles (admin / teacher / staff [POD]) plus a couple of
+// student data rows. Students have a password too so the schema validates, but
+// they are not expected to log in on the web — parents reach them via mobile.
 const seedDB = async () => {
   try {
-    // Connect to MongoDB
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('✅ Connected to MongoDB');
+    console.log('Connected to MongoDB');
 
-    // Clear existing users
     await User.deleteMany({});
-    console.log('🗑️  Cleared existing users');
+    console.log('Cleared existing users');
 
-    // Create test users
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashed = await bcrypt.hash('password123', 10);
+    const stub   = await bcrypt.hash(User.generateQrToken(), 10);
 
     const users = [
       {
-        name: 'Admin User',
-        email: 'admin@test.com',
-        password: hashedPassword,
-        role: 'admin',
-        department: 'Administration',
+        name: 'Admin User', email: 'admin@test.com', password: hashed,
+        role: 'admin', department: 'Administration', isActive: true,
+      },
+      {
+        name: 'John Teacher', email: 'teacher@test.com', password: hashed,
+        role: 'teacher', department: 'Mathematics', isActive: true,
+      },
+      {
+        name: 'Maria Prefect', email: 'pod@test.com', password: hashed,
+        role: 'staff', department: 'Office of the Prefect of Discipline', isActive: true,
+      },
+      {
+        name: 'Jane Student', email: 'jane.student@test.com', password: stub,
+        role: 'student', studentId: '2024-0001',
+        section: 'Grade 10 - A', gradeLevel: 'Grade 10',
+        parentName: 'Maria Santos', parentEmail: 'parent.santos@example.com',
+        parentPhone: '+63 917 000 0001',
+        qrCode: User.generateQrToken(),
         isActive: true,
       },
       {
-        name: 'John Teacher',
-        email: 'teacher@test.com',
-        password: hashedPassword,
-        role: 'teacher',
-        department: 'Mathematics',
-        isActive: true,
-      },
-      {
-        name: 'Jane Student',
-        email: 'student@test.com',
-        password: hashedPassword,
-        role: 'student',
-        studentId: '2024-0001',
-        section: 'Grade 10 - Section A',
-        gradeLevel: 'Grade 10',
+        name: 'Pedro Ramos', email: 'pedro.student@test.com', password: stub,
+        role: 'student', studentId: '2024-0002',
+        section: 'Grade 10 - A', gradeLevel: 'Grade 10',
+        parentName: 'Luis Ramos', parentEmail: 'parent.ramos@example.com',
+        parentPhone: '+63 917 000 0002',
+        qrCode: User.generateQrToken(),
         isActive: true,
       },
     ];
 
-    const savedUsers = await User.insertMany(users);
-    console.log('✅ Created test users:');
-    savedUsers.forEach(user => {
-      console.log(`  - ${user.email} (${user.role})`);
-    });
-
-    console.log('\n📝 Test Credentials:');
-    console.log('  Admin:   admin@test.com / password123');
+    const saved = await User.insertMany(users);
+    console.log('Seeded users:');
+    saved.forEach((u) => console.log(`  - ${u.email} (${u.role})`));
+    console.log('\nTest credentials (web):');
+    console.log('  Admin:   admin@test.com   / password123');
     console.log('  Teacher: teacher@test.com / password123');
-    console.log('  Student: student@test.com / password123');
+    console.log('  Staff:   pod@test.com     / password123');
 
     process.exit(0);
   } catch (err) {
-    console.error('❌ Error:', err.message);
+    console.error('Error:', err.message);
     process.exit(1);
   }
 };

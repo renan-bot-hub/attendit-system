@@ -11,12 +11,24 @@ const attendanceSchema = new mongoose.Schema({
     ref: 'Session',
     required: true,
   },
-  // Added status field for manual attendance (Present / Late / Absent)
   status: {
     type: String,
     enum: ['Present', 'Late', 'Absent'],
     default: 'Present',
   },
+
+  // How this row was captured — the Attendance Records screen surfaces this
+  // in the "Marked By" column (Fig. 9). 'Scan' = mobile QR, 'Manual' = teacher override.
+  markedBy: {
+    type: String,
+    enum: ['Scan', 'Manual', 'Auto'],
+    default: 'Manual',
+  },
+  notes: { type: String, default: '' },
+
+  // Optional time-in for late/present arrivals; helpful for the records view.
+  timeIn:    { type: String, default: '' },
+
   timestamp: { type: Date, default: Date.now },
 });
 
