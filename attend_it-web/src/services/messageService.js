@@ -1,7 +1,8 @@
+// Triggered Threads API wrapper (Fig. 12). Teachers open threads;
+// either side can post while the thread is Open.
+
 import API from './api';
 
-// Triggered-thread messaging (manuscript Fig. 12). Threads are container objects
-// — only teachers/staff open them; messages live inside them.
 export const messageService = {
   listThreads:    (params = {}) => API.get('/messages/threads', { params }),
   createThread:   (data)        => API.post('/messages/threads', data),
@@ -11,5 +12,4 @@ export const messageService = {
   sendMessage:    (id, text)    => API.post(`/messages/threads/${id}/messages`, { text }),
 };
 
-// Default export keeps older imports working
 export default messageService;

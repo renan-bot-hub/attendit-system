@@ -1,3 +1,6 @@
+// Public signup. Restricts roles to teacher / staff; first user in an
+// empty DB is auto-promoted to admin by the backend.
+
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, UserPlus } from 'lucide-react';

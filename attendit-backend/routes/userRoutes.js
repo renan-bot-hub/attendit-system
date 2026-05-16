@@ -1,3 +1,5 @@
+// /api/users — CRUD, self-service profile, admin-only QR backup.
+
 const router = require('express').Router();
 const {
   getAllUsers,

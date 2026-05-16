@@ -1,3 +1,6 @@
+// School Settings (admin, Fig. 23). Identity, attendance time rules,
+// case triggers, risk-band cutoffs, and contact info.
+
 import React, { useEffect, useState } from 'react';
 import { Save, CheckCircle, School, Sliders, Phone, Clock, AlertTriangle } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';

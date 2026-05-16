@@ -1,3 +1,6 @@
+// Analytics Hub. Live attendance KPIs, auto-generated prescriptive
+// insight banners, and a per-student risk breakdown.
+
 import React, { useState, useEffect } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import { attendService } from '../../services/attendService';

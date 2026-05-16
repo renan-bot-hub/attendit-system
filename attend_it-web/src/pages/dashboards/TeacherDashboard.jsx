@@ -1,3 +1,7 @@
+// Teacher Dashboard (Fig. 8). Headline tiles, weekly trend SVG,
+// absences-per-weekday bar chart, at-risk list, and recent parent
+// document submissions.
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -6,7 +10,6 @@ import {
 } from 'lucide-react';
 import { attendService } from '../../services/attendService';
 import { sessionService } from '../../services/sessionService';
-import { caseService } from '../../services/caseService';
 import { documentService } from '../../services/documentService';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
@@ -24,7 +27,6 @@ export default function TeacherDashboard() {
   const [sessions, setSessions] = useState([]);
   const [summary, setSummary]   = useState({});
   const [trend, setTrend]       = useState([]);
-  const [cases, setCases]       = useState([]);
   const [docs, setDocs]         = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -32,19 +34,17 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [rRes, sRes, sumRes, tRes, cRes, dRes] = await Promise.all([
+        const [rRes, sRes, sumRes, tRes, dRes] = await Promise.all([
           attendService.getRiskAnalysis(),
           sessionService.getSessions(),
           attendService.getSummary(),
           attendService.getTrend(14),
-          caseService.getCases(),
           documentService.list({ status: 'Pending Review' }),
         ]);
         setRisk(rRes.data);
         setSessions(sRes.data);
         setSummary(sumRes.data);
         setTrend(tRes.data);
-        setCases(cRes.data);
         setDocs(dRes.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard.');

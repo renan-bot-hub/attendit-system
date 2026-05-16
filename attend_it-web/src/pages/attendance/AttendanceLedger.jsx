@@ -1,11 +1,16 @@
+// Attendance Records (Fig. 9). Authoritative ledger with status, section,
+// and Marked By filters; per-row Correct + admin-only Delete.
+
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, X, Check, Edit2, Filter } from 'lucide-react';
+import { Search, X, Check, Edit2, Filter, Trash2 } from 'lucide-react';
 import { attendService } from '../../services/attendService';
+import { authService } from '../../services/authService';
 
 // Attendance Records (manuscript Fig. 9). Adds: status filter, section filter,
 // "Marked By" column (Scan vs Manual). Inline correction modal keeps the
 // existing per-row workflow.
 export default function AttendanceLedger() {
+  const isAdmin = authService.getCurrentUser()?.role === 'admin';
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -65,6 +70,16 @@ export default function AttendanceLedger() {
   const openCorrectionModal = (entry) => {
     setEditing(entry);
     setNewStatus(entry.status);
+  };
+
+  const handleDelete = async (entry) => {
+    if (!window.confirm(`Delete attendance entry for ${entry.studentId?.name || 'student'} on ${entry.timestamp ? new Date(entry.timestamp).toLocaleDateString() : '—'}?`)) return;
+    try {
+      await attendService.removeEntry(entry._id);
+      setEntries((cur) => cur.filter((e) => e._id !== entry._id));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Delete failed.');
+    }
   };
 
   const handleSaveCorrection = async () => {
@@ -156,11 +171,17 @@ export default function AttendanceLedger() {
                       {entry.markedBy || 'Manual'}
                     </span>
                   </div>
-                  <div className="col-span-2 text-right">
+                  <div className="col-span-2 text-right flex justify-end gap-3">
                     <button onClick={() => openCorrectionModal(entry)}
                       className="text-blue-600 font-bold text-sm hover:text-blue-800 inline-flex items-center">
                       <Edit2 className="w-3 h-3 mr-1.5" /> Correct
                     </button>
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(entry)}
+                        className="text-rose-600 font-bold text-sm hover:text-rose-800 inline-flex items-center">
+                        <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

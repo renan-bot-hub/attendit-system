@@ -1,3 +1,6 @@
+// Take Attendance — manual roster checklist for teachers. Includes a
+// quick "create new session" modal and bulk "Mark All Present" action.
+
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, Save, CheckSquare, Plus } from 'lucide-react';
 import { attendService } from '../../services/attendService';

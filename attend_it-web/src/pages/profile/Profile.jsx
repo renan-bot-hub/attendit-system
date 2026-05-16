@@ -1,3 +1,6 @@
+// My Profile. Self-service edit of name / email / department, plus
+// a "Change Password" form that requires the current password.
+
 import React, { useEffect, useState } from 'react';
 import { UserCircle, Lock, Save, KeyRound } from 'lucide-react';
 import { userService } from '../../services/userService';

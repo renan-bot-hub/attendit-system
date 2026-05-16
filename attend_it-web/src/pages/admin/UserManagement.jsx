@@ -1,3 +1,6 @@
+// User Management (admin). Search, role filter, create/edit modals,
+// activate/deactivate, delete, and CSV bulk import.
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Edit, UserX, UserCheck, Plus, X, Save, Trash2, Upload, Download } from 'lucide-react';
 import { userService } from '../../services/userService';

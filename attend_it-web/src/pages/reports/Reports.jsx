@@ -1,3 +1,7 @@
+// Reports (Fig. 14, 19). Generates Attendance Records / Risk Analysis /
+// Case Logs exports as CSV, Excel (.xls), or PDF (browser print dialog).
+// All formatting happens client-side; no extra npm deps.
+
 import React, { useState } from 'react';
 import { FileBarChart, FileText, FileSpreadsheet, Download, AlertTriangle } from 'lucide-react';
 import { attendService } from '../../services/attendService';

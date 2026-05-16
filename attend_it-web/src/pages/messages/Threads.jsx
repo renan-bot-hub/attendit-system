@@ -1,3 +1,6 @@
+// Triggered Threads (Fig. 12). Teacher opens a thread about a student;
+// parent replies via mobile. Either side can Close / Reopen.
+
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Search, Send, Plus, X, Lock, Unlock, MessageCircle, ShieldAlert,

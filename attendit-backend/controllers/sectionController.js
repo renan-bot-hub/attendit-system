@@ -1,16 +1,20 @@
+// Section CRUD with per-section student counts. Writes are admin-only.
+
 const Section = require('../models/Section');
 const User = require('../models/User');
 
-// GET /api/sections  — list (with student count + adviser populated)
 exports.list = async (req, res) => {
   try {
-    const sections = await Section.find().populate('adviser', 'name email').sort({ gradeLevel: 1, name: 1 });
-    // Count student rows tied to each section name (we store section as a string on User)
+    const sections = await Section.find()
+      .populate('adviser', 'name email')
+      .sort({ gradeLevel: 1, name: 1 });
+
     const counts = await User.aggregate([
       { $match: { role: 'student' } },
       { $group: { _id: '$section', count: { $sum: 1 } } },
     ]);
     const countMap = new Map(counts.map((c) => [c._id, c.count]));
+
     res.json(sections.map((s) => ({
       ...s.toObject(),
       studentCount: countMap.get(s.name) || 0,
@@ -20,7 +24,6 @@ exports.list = async (req, res) => {
   }
 };
 
-// POST /api/sections  — admin creates a section
 exports.create = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -28,8 +31,10 @@ exports.create = async (req, res) => {
   try {
     const { name, gradeLevel, adviser } = req.body;
     if (!name || !gradeLevel) return res.status(400).json({ message: 'name and gradeLevel are required' });
+
     const exists = await Section.findOne({ name });
     if (exists) return res.status(400).json({ message: 'A section with that name already exists' });
+
     const sec = await Section.create({ name, gradeLevel, adviser: adviser || null });
     res.status(201).json(sec);
   } catch (err) {
@@ -37,7 +42,6 @@ exports.create = async (req, res) => {
   }
 };
 
-// PUT /api/sections/:id  — admin edit
 exports.update = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -56,7 +60,6 @@ exports.update = async (req, res) => {
   }
 };
 
-// DELETE /api/sections/:id  — admin (only if no students still assigned)
 exports.remove = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -64,6 +67,7 @@ exports.remove = async (req, res) => {
   try {
     const sec = await Section.findById(req.params.id);
     if (!sec) return res.status(404).json({ message: 'Section not found' });
+
     const count = await User.countDocuments({ role: 'student', section: sec.name });
     if (count > 0) {
       return res.status(400).json({ message: `Cannot delete: ${count} students are still assigned to this section.` });

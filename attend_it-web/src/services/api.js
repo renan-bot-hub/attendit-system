@@ -1,6 +1,8 @@
+// Shared axios instance. Attaches the JWT on every request and bounces
+// the user to /login on a 401.
+
 import axios from 'axios';
 
-// Shared axios instance — baseURL comes from VITE_API_URL in production
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 });

@@ -1,7 +1,9 @@
+// Route guard: redirects unauthenticated users to /login and users with
+// the wrong role to their own dashboard.
+
 import { Navigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 
-// Gate a route by role. Unauthenticated -> /login. Wrong role -> own home.
 export default function RoleRoute({ roles, children }) {
   const user = authService.getCurrentUser();
   const token = localStorage.getItem('token');

@@ -1,8 +1,9 @@
+// Parent excuse / health-cert submissions (Fig. 13). Mobile submits;
+// web teacher accepts or rejects. Counts feed dashboard tiles.
+
 const Document = require('../models/Document');
 const User = require('../models/User');
 
-// GET /api/documents  — teachers see all parent submissions, staff/admin too.
-// ?status=Pending Review | Accepted | Rejected
 exports.list = async (req, res) => {
   try {
     const filter = {};
@@ -17,16 +18,16 @@ exports.list = async (req, res) => {
   }
 };
 
-// POST /api/documents  — usually called by mobile API, but the web supports
-// manual entry on behalf of a parent who walks in with paperwork.
 exports.create = async (req, res) => {
   try {
     const { studentId, documentType, fileName, fileUrl, absenceDate, reason, parentName } = req.body;
     if (!studentId) return res.status(400).json({ message: 'studentId is required' });
+
     const student = await User.findById(studentId);
     if (!student || student.role !== 'student') {
       return res.status(404).json({ message: 'Student not found' });
     }
+
     const doc = await Document.create({
       student: studentId,
       submittedBy: req.user.id,
@@ -44,7 +45,6 @@ exports.create = async (req, res) => {
   }
 };
 
-// PATCH /api/documents/:id  — teacher accepts or rejects
 exports.review = async (req, res) => {
   if (!['teacher', 'admin', 'staff'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Unauthorized' });
@@ -71,7 +71,19 @@ exports.review = async (req, res) => {
   }
 };
 
-// GET /api/documents/summary  — counts for the dashboard tiles (Fig. 13 header)
+exports.remove = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  try {
+    const doc = await Document.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ message: 'Document not found' });
+    res.json({ message: 'Document deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 exports.summary = async (req, res) => {
   try {
     const pending  = await Document.countDocuments({ status: 'Pending Review' });

@@ -1,3 +1,6 @@
+// Reusable card for an at-risk student — name + risk score + AI
+// recommendation + "Approve Intervention" button.
+
 export default function AtRiskCard({ student, onApprove }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition">

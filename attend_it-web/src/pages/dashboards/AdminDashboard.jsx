@@ -1,3 +1,6 @@
+// Administrator Hub (Fig. 20). User counts, attendance KPIs, school-wide
+// trend chart, case distribution by risk level, and a system health panel.
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {

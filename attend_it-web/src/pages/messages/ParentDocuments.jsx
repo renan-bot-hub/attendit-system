@@ -1,13 +1,18 @@
+// Parent Documents review (Fig. 13). Teacher accepts or rejects
+// excuse letters / health certs submitted from the mobile app.
+
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FolderCheck, CheckCircle, XCircle, Clock, FileText, FileDown, Search,
+  FolderCheck, CheckCircle, XCircle, Clock, FileText, FileDown, Search, Trash2,
 } from 'lucide-react';
 import { documentService } from '../../services/documentService';
+import { authService } from '../../services/authService';
 
 // Parent Documents review (manuscript Fig. 13). Teachers review excuse letters
 // and health certificates submitted by parents from the mobile app and accept
 // or reject them.
 export default function ParentDocuments() {
+  const isAdmin = authService.getCurrentUser()?.role === 'admin';
   const [docs, setDocs] = useState([]);
   const [summary, setSummary] = useState({ pending: 0, accepted: 0, rejected: 0, total: 0 });
   const [tab, setTab] = useState('Pending');     // Pending | Accepted | Rejected | All
@@ -49,6 +54,17 @@ export default function ParentDocuments() {
     }
     return list;
   }, [docs, tab, search]);
+
+  const handleDelete = async (d) => {
+    if (!window.confirm(`Delete this ${d.documentType.toLowerCase()} for ${d.student?.name || 'student'}?`)) return;
+    try {
+      await documentService.remove(d._id);
+      setDocs((cur) => cur.filter((x) => x._id !== d._id));
+      load();  // refresh summary counts
+    } catch (err) {
+      setError(err.response?.data?.message || 'Delete failed.');
+    }
+  };
 
   const review = async (id, status) => {
     try {
@@ -134,13 +150,16 @@ export default function ParentDocuments() {
                   </div>
                   <div className="flex flex-col gap-2 items-end shrink-0">
                     {d.status === 'Pending Review' ? (
-                      <>
-                        <button onClick={() => setSelected(d)} className="text-xs font-bold text-blue-600 hover:text-blue-800">Review</button>
-                      </>
+                      <button onClick={() => setSelected(d)} className="text-xs font-bold text-blue-600 hover:text-blue-800">Review</button>
                     ) : (
                       <p className="text-[10px] text-slate-400">
                         Reviewed {d.reviewedAt ? new Date(d.reviewedAt).toLocaleDateString() : ''}
                       </p>
+                    )}
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(d)} className="text-xs font-bold text-rose-600 hover:text-rose-800 inline-flex items-center gap-1">
+                        <Trash2 className="w-3 h-3" /> Delete
+                      </button>
                     )}
                   </div>
                 </div>

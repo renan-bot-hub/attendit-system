@@ -1,0 +1,24 @@
+{
+  "featureNames": [
+    "attendanceRate",
+    "consecutiveAbsences",
+    "totalAbsences",
+    "lateCount",
+    "last7DayAbsences",
+    "last30DayAbsences",
+    "worstWeekdayAbsenceRate"
+  ],
+  "classes": [
+    "Low Risk",
+    "Medium Risk",
+    "High Risk",
+    "Critical"
+  ],
+  "trainedAt": "2026-05-16T04:49:01.090Z",
+  "valLoss": 0.1260092407464981,
+  "valAcc": 0.9649999737739563,
+  "history": {
+    "lossLast": 0.1296250820159912,
+    "accLast": 0.9645833373069763
+  }
+}

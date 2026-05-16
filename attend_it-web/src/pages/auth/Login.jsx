@@ -1,3 +1,7 @@
+// Login screen. Two-pane layout with school branding; routes the user
+// to /admin, /staff, or /teacher based on their role after a successful
+// login.
+
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Lock, Mail, ArrowRight } from 'lucide-react';

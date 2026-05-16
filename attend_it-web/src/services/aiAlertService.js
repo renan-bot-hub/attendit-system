@@ -1,3 +1,5 @@
+// AI risk alerts API wrapper (TF-backed pipeline).
+
 import API from './api';
 
 export const aiAlertService = {

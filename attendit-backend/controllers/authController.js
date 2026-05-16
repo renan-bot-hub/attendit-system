@@ -1,10 +1,10 @@
+// Signup + login. First user in an empty DB is auto-promoted to admin.
+// Web signup is otherwise restricted to teacher / staff (POD) roles.
+
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Public signup. Admin role is BLOCKED here — the very first user in an empty
-// system is automatically promoted to admin; subsequent admins must be created
-// from inside the app by an existing admin.
 exports.signup = async (req, res) => {
   try {
     const { name, email, password, role, studentId, section, gradeLevel, department } = req.body;
@@ -19,9 +19,6 @@ exports.signup = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
-    // First user auto-becomes admin (bootstrap); after that admin signup is blocked.
-    // Web roles per manuscript: admin / teacher / staff (Prefect of Discipline).
-    // Students are data-only records — parents use the mobile app; students don't log in.
     const userCount = await User.countDocuments();
     let finalRole = role || 'teacher';
     if (userCount === 0) {
@@ -39,8 +36,6 @@ exports.signup = async (req, res) => {
       email,
       password: hashedPassword,
       role: finalRole,
-      // Student-only fields are never set from web signup; included only if the
-      // bootstrap admin somehow used them (defensive, not expected).
       studentId: studentId || null,
       section: section || null,
       gradeLevel: gradeLevel || null,
@@ -58,7 +53,6 @@ exports.signup = async (req, res) => {
   }
 };
 
-// Validates credentials and returns a JWT + user payload
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;

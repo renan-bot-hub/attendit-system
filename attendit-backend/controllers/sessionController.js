@@ -1,7 +1,8 @@
+// Class-session CRUD. Teachers see their own; admin sees all.
+
 const Session = require('../models/Session');
 const mongoose = require('mongoose');
 
-// GET /api/sessions  — list sessions for the logged-in teacher (or all for admin)
 exports.getSessions = async (req, res) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { teacherId: req.user.id };
@@ -14,7 +15,6 @@ exports.getSessions = async (req, res) => {
   }
 };
 
-// POST /api/sessions  — create a new session
 exports.createSession = async (req, res) => {
   if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Unauthorized' });
@@ -36,7 +36,6 @@ exports.createSession = async (req, res) => {
   }
 };
 
-// PATCH /api/sessions/:id/toggle  — activate or deactivate a session
 exports.toggleSession = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {

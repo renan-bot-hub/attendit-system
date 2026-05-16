@@ -1,15 +1,16 @@
+// Parent–teacher conferences scheduled by POD off an escalated case
+// (Fig. 18). Admin/POD schedule + update; admin can delete.
+
 const Conference = require('../models/Conference');
 const Case = require('../models/Case');
 
-// GET /api/conferences  — list everything visible to staff/admin.
-// Teachers can see conferences linked to cases they opened.
 exports.list = async (req, res) => {
   try {
     const filter = {};
     if (req.query.status) filter.status = req.query.status;
     const items = await Conference.find(filter)
-      .populate('student', 'name studentId section gradeLevel parentName parentEmail parentPhone')
-      .populate('caseRef',  'riskLevel status')
+      .populate('student',     'name studentId section gradeLevel parentName parentEmail parentPhone')
+      .populate('caseRef',     'riskLevel status')
       .populate('scheduledBy', 'name role')
       .sort({ date: 1 });
     res.json(items);
@@ -18,7 +19,6 @@ exports.list = async (req, res) => {
   }
 };
 
-// POST /api/conferences  — staff (POD) schedules a parent–teacher meeting.
 exports.create = async (req, res) => {
   if (!['staff', 'admin'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Staff (POD) or admin required' });
@@ -26,8 +26,10 @@ exports.create = async (req, res) => {
   try {
     const { caseRef, date, time, location, agenda, attendees } = req.body;
     if (!caseRef || !date) return res.status(400).json({ message: 'caseRef and date are required' });
+
     const c = await Case.findById(caseRef);
     if (!c) return res.status(404).json({ message: 'Case not found' });
+
     const item = await Conference.create({
       caseRef, student: c.student,
       scheduledBy: req.user.id,
@@ -44,7 +46,19 @@ exports.create = async (req, res) => {
   }
 };
 
-// PATCH /api/conferences/:id  — mark completed / cancel / update outcome
+exports.remove = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  try {
+    const item = await Conference.findByIdAndDelete(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Conference not found' });
+    res.json({ message: 'Conference deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 exports.update = async (req, res) => {
   if (!['staff', 'admin'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Staff (POD) or admin required' });
@@ -52,15 +66,16 @@ exports.update = async (req, res) => {
   try {
     const { status, outcome, date, time, location, agenda, attendees } = req.body;
     const patch = {};
-    if (status !== undefined)   patch.status   = status;
-    if (outcome !== undefined)  patch.outcome  = outcome;
-    if (date !== undefined)     patch.date     = new Date(date);
-    if (time !== undefined)     patch.time     = time;
-    if (location !== undefined) patch.location = location;
-    if (agenda !== undefined)   patch.agenda   = agenda;
+    if (status !== undefined)   patch.status    = status;
+    if (outcome !== undefined)  patch.outcome   = outcome;
+    if (date !== undefined)     patch.date      = new Date(date);
+    if (time !== undefined)     patch.time      = time;
+    if (location !== undefined) patch.location  = location;
+    if (agenda !== undefined)   patch.agenda    = agenda;
     if (attendees !== undefined) patch.attendees = attendees;
+
     const item = await Conference.findByIdAndUpdate(req.params.id, patch, { new: true })
-      .populate('student', 'name studentId section')
+      .populate('student',     'name studentId section')
       .populate('scheduledBy', 'name role');
     if (!item) return res.status(404).json({ message: 'Conference not found' });
     res.json(item);

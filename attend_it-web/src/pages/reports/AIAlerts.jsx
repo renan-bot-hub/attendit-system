@@ -1,3 +1,7 @@
+// AI Alerts & Recommendations (Fig. 10). Lists pattern-flagged students
+// with risk score and prescriptive actions; supports Under Review,
+// Escalate to POD, and Dismiss.
+
 import React, { useEffect, useState } from 'react';
 import {
   Sparkles, RefreshCw, AlertTriangle, ShieldAlert, BellRing, ArrowUpRight,

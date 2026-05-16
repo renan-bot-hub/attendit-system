@@ -1,10 +1,12 @@
+// Loads the school settings doc once and shares it (plus a refresh()
+// callback) with every page via context.
+
 import { createContext, useEffect, useState } from 'react';
 import { settingsService } from '../services/settingsService';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const SchoolContext = createContext(null);
 
-// Loads school settings once and shares them with every page
 export function SchoolProvider({ children }) {
   const [settings, setSettings] = useState({
     schoolName: 'My School',

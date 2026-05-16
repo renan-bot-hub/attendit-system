@@ -1,3 +1,5 @@
+// School-wide announcements API wrapper (Fig. 15).
+
 import API from './api';
 
 export const announcementService = {

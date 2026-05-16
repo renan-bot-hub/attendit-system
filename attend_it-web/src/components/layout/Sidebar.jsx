@@ -1,3 +1,6 @@
+// Role-aware sidebar navigation. Three nav sets (admin / teacher / staff),
+// school branding from SchoolContext, mobile drawer, and sign-out.
+
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {

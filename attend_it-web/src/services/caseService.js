@@ -1,3 +1,5 @@
+// Intervention cases API wrapper.
+
 import API from './api';
 
 export const caseService = {
@@ -7,4 +9,5 @@ export const caseService = {
   updateStatus: (id, status, reviewNote = '') =>
     API.patch(`/cases/${id}/status`, { status, reviewNote }),
   escalate:     (id, riskLevel) => API.post(`/cases/${id}/escalate`, riskLevel ? { riskLevel } : {}),
+  remove:       (id)            => API.delete(`/cases/${id}`),
 };

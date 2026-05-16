@@ -1,12 +1,13 @@
+// Wipes the users collection and inserts a demo set (one of each web
+// role plus two student records). Destructive — never run in production.
+// Run with: npm run seed
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const User = require('./models/User');
 
-// Seeds the four web roles (admin / teacher / staff [POD]) plus a couple of
-// student data rows. Students have a password too so the schema validates, but
-// they are not expected to log in on the web — parents reach them via mobile.
 const seedDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);

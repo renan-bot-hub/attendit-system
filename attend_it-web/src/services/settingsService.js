@@ -1,9 +1,8 @@
+// School settings API wrapper. GET is open; PUT is admin-only.
+
 import API from './api';
 
 export const settingsService = {
-  // Get the school's global settings (public — used for branding)
-  get: async () => API.get('/settings'),
-
-  // Admin: persist updated school settings
-  update: async (data) => API.put('/settings', data),
+  get:    () => API.get('/settings'),
+  update: (data) => API.put('/settings', data),
 };

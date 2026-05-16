@@ -1,3 +1,5 @@
+// Class sections API wrapper.
+
 import API from './api';
 
 export const sectionService = {

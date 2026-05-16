@@ -1,14 +1,13 @@
+// A single class meeting that attendance is taken against.
+
 const mongoose = require('mongoose');
 
-// Fix #7: Expanded Session model with teacherId, subject, section
 const sessionSchema = new mongoose.Schema({
-  className:  { type: String, required: true },      // e.g. "Mathematics"
-  section:    { type: String, required: true },      // e.g. "Grade 10 - Section A"
+  className:  { type: String, required: true },
+  section:    { type: String, required: true },
   subject:    { type: String, default: '' },
-  date:       { type: Date, default: Date.now },
+  date:       { type: Date,   default: Date.now },
   active:     { type: Boolean, default: false },
-
-  // Owner reference — used for QR ownership check
   teacherId:  {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

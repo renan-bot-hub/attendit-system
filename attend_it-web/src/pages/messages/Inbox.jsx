@@ -1,3 +1,6 @@
+// Legacy DM Inbox UI. Superseded by Threads.jsx (Triggered Threads, Fig. 12).
+// Not currently routed — kept for backwards compatibility.
+
 import React, { useState } from 'react';
 import { Search, Send, Paperclip, MoreVertical } from 'lucide-react';
 

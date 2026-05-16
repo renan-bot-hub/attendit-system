@@ -1,12 +1,18 @@
+// Disciplinary Actions & Conferences (Fig. 18). POD tracks parent
+// meetings Scheduled → Completed / Cancelled with outcome notes;
+// admin can delete.
+
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, CheckCircle, XCircle, FileEdit, X } from 'lucide-react';
+import { CalendarDays, CheckCircle, XCircle, FileEdit, X, Trash2 } from 'lucide-react';
 import { conferenceService } from '../../services/conferenceService';
+import { authService } from '../../services/authService';
 
 // Disciplinary Actions & Conferences (manuscript Fig. 18). POD schedules parent
 // conferences, tracks attendance/outcome, and closes them.
 const STATUS_TABS = ['All', 'Scheduled', 'Completed', 'Cancelled'];
 
 export default function Conferences() {
+  const isAdmin = authService.getCurrentUser()?.role === 'admin';
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState('Scheduled');
   const [loading, setLoading] = useState(true);
@@ -30,6 +36,16 @@ export default function Conferences() {
   useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => tab === 'All' ? items : items.filter((c) => c.status === tab), [items, tab]);
+
+  const handleDelete = async (c) => {
+    if (!window.confirm(`Delete this conference (${c.student?.name || ''}, ${new Date(c.date).toLocaleDateString()})?`)) return;
+    try {
+      await conferenceService.remove(c._id);
+      setItems((cur) => cur.filter((x) => x._id !== c._id));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Delete failed.');
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -121,14 +137,24 @@ export default function Conferences() {
                     </button>
                   </div>
                 )}
-                {c.status !== 'Scheduled' && (
-                  <button
-                    onClick={() => { setEditing(c); setForm({ status: c.status, outcome: c.outcome || '' }); }}
-                    className="mt-3 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"
-                  >
-                    <FileEdit className="w-3 h-3" /> Edit outcome
-                  </button>
-                )}
+                <div className="flex gap-2 mt-3">
+                  {c.status !== 'Scheduled' && (
+                    <button
+                      onClick={() => { setEditing(c); setForm({ status: c.status, outcome: c.outcome || '' }); }}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"
+                    >
+                      <FileEdit className="w-3 h-3" /> Edit outcome
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDelete(c)}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

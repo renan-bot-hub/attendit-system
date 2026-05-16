@@ -1,19 +1,18 @@
+// Parent-submitted excuse letter or health certificate. Teacher accepts
+// or rejects from the Parent Documents page.
+
 const mongoose = require('mongoose');
 
-// Parent submissions: excuse letters and health/medical certificates that
-// justify a specific absence (manuscript Fig. 13). Submitted from the parent
-// mobile app, reviewed by the homeroom teacher on the web.
 const documentSchema = new mongoose.Schema({
   student:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // parent user, optional
-  parentName:  { type: String, default: '' },  // captured at submit time in case parent has no account yet
+  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  parentName:  { type: String, default: '' },
   documentType:{ type: String, enum: ['Excuse Letter', 'Health Certificate', 'Other'], default: 'Excuse Letter' },
   fileName:    { type: String, default: '' },
-  fileUrl:     { type: String, default: '' },  // we keep just a reference; storage layer is out of scope
+  fileUrl:     { type: String, default: '' },
   absenceDate: { type: Date, default: null },
   reason:      { type: String, default: '' },
   status:      { type: String, enum: ['Pending Review', 'Accepted', 'Rejected'], default: 'Pending Review' },
-
   linkedCase:  { type: mongoose.Schema.Types.ObjectId, ref: 'Case', default: null },
   reviewedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   reviewedAt:  { type: Date, default: null },

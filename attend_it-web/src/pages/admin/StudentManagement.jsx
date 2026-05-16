@@ -1,3 +1,6 @@
+// Student & Section Management (Fig. 22). Admin-only — student CRUD,
+// section CRUD, and one-click QR backup regeneration for lost ID cards.
+
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   IdCard, Plus, X, Edit, Trash2, QrCode, RefreshCw, Search, Layers, Download,

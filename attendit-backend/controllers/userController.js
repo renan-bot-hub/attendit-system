@@ -1,13 +1,13 @@
+// User CRUD + self-service profile actions + admin-only QR backup.
+// Web roles: admin / teacher / staff. Students are data-only records.
+
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
-// Allowed roles for web (admin, teacher, staff). Students are data-only records;
-// parents use the mobile app and are not represented as login users here.
 const WEB_ROLES   = ['admin', 'teacher', 'staff'];
 const DATA_ROLES  = ['student'];
 const ALL_ROLES   = [...WEB_ROLES, ...DATA_ROLES];
 
-// GET /api/users  — list users (any authenticated user; non-admins get a slim projection)
 exports.getAllUsers = async (req, res) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { isActive: true };
@@ -22,7 +22,6 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// GET /api/users/me
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -33,7 +32,6 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// PATCH /api/users/me  — update own profile (name/email/contact fields)
 exports.updateMe = async (req, res) => {
   try {
     const { name, email, department, section, gradeLevel } = req.body;
@@ -49,7 +47,6 @@ exports.updateMe = async (req, res) => {
   }
 };
 
-// POST /api/users/me/password  — change own password
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -73,7 +70,6 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// POST /api/users  — create user (admin only)
 exports.createUser = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -92,8 +88,6 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
-    // Students are data-only — they don't log in. A throwaway password is used so
-    // the schema requirement is met but the record can never authenticate.
     const isLoginUser = WEB_ROLES.includes(role);
     if (isLoginUser && (!password || password.length < 6)) {
       return res.status(400).json({ message: 'Password (min 6) required for staff accounts' });
@@ -115,7 +109,6 @@ exports.createUser = async (req, res) => {
       parentEmail: parentEmail || null,
       parentPhone: parentPhone || null,
     };
-    // Auto-mint a QR token for new student records so the mobile scanner has something to read
     if (role === 'student') doc.qrCode = User.generateQrToken();
 
     const user = await User.create(doc);
@@ -125,7 +118,6 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// POST /api/users/bulk  — bulk create users (admin only)
 exports.bulkCreate = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -181,7 +173,6 @@ exports.bulkCreate = async (req, res) => {
   res.json(results);
 };
 
-// PUT /api/users/:id  — admin edit
 exports.updateUser = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -208,7 +199,6 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// PATCH /api/users/:id/toggle-status
 exports.toggleUserStatus = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -226,7 +216,6 @@ exports.toggleUserStatus = async (req, res) => {
   }
 };
 
-// DELETE /api/users/:id
 exports.deleteUser = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
@@ -243,10 +232,6 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// POST /api/users/:id/regenerate-qr  — admin only.
-// Mints a fresh QR token for a student. The use case is the manuscript's
-// "lost ID" backup flow: scanning is the mobile primary path, so when a
-// student loses their printed QR the admin issues a new one here.
 exports.regenerateQr = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });

@@ -1,3 +1,6 @@
+// School-wide Announcements (Fig. 15). Admins and POD publish;
+// everyone reads. Optional per-section targeting.
+
 import React, { useEffect, useState } from 'react';
 import { Megaphone, Plus, X, Trash2 } from 'lucide-react';
 import { announcementService } from '../../services/announcementService';

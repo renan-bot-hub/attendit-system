@@ -1,10 +1,11 @@
+// School-wide notices (Fig. 15). Admin/staff publish; everyone reads;
+// admin can delete.
+
 const Announcement = require('../models/Announcement');
 
-// GET /api/announcements  — everyone reads; ?status filter optional
 exports.list = async (req, res) => {
   try {
     const filter = { status: 'Published' };
-    // Admins can also see their drafts
     if (req.user.role === 'admin' && req.query.includeDrafts === 'true') {
       delete filter.status;
     }
@@ -17,7 +18,6 @@ exports.list = async (req, res) => {
   }
 };
 
-// POST /api/announcements  — admin or staff (POD) post school-wide notices
 exports.create = async (req, res) => {
   if (!['admin', 'staff'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Admin or staff access required' });
@@ -25,6 +25,7 @@ exports.create = async (req, res) => {
   try {
     const { title, body, targetSections, status } = req.body;
     if (!title || !body) return res.status(400).json({ message: 'Title and body are required' });
+
     const item = await Announcement.create({
       title, body,
       targetSections: Array.isArray(targetSections) ? targetSections : [],
@@ -38,11 +39,11 @@ exports.create = async (req, res) => {
   }
 };
 
-// PATCH /api/announcements/:id  — edit your own (or any if admin)
 exports.update = async (req, res) => {
   try {
     const item = await Announcement.findById(req.params.id);
     if (!item) return res.status(404).json({ message: 'Announcement not found' });
+
     if (req.user.role !== 'admin' && item.postedBy.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Cannot edit another user\'s announcement' });
     }
@@ -58,7 +59,6 @@ exports.update = async (req, res) => {
   }
 };
 
-// DELETE /api/announcements/:id  — admin only
 exports.remove = async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });

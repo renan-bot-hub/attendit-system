@@ -1,3 +1,6 @@
+// Prefect of Discipline (POD) dashboard (Fig. 16). Critical-case queue,
+// upcoming conferences, awaiting-document count.
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {

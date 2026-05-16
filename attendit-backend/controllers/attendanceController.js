@@ -1,17 +1,17 @@
+// All attendance read/write endpoints — manual submit, ledger with
+// filters, per-row correction/delete, risk analysis, summary, trend.
+
 const Attendance = require('../models/Attendance');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 
-// Load (or lazily create) the singleton settings document — used by every risk
-// calculation so admins can re-tune thresholds without redeploying.
 async function loadSettings() {
   let s = await Settings.findOne({ key: 'global' });
   if (!s) s = await Settings.create({ key: 'global' });
   return s;
 }
 
-// Convert an attendance rate into a risk tier based on configured bands.
 function classifyRate(rate, s) {
   if (rate < s.attendanceCriticalBelow) return 'Critical';
   if (rate < s.attendanceHighRiskBelow) return 'High Risk';
@@ -19,14 +19,12 @@ function classifyRate(rate, s) {
   return 'Low Risk';
 }
 
-// POST /api/attendance/manual  — teacher manually submits attendance list
 exports.submitManual = async (req, res) => {
   const { sessionId, records } = req.body;
 
   if (!['teacher', 'admin', 'staff'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
-
   if (!sessionId || !Array.isArray(records) || records.length === 0) {
     return res.status(400).json({ message: 'sessionId and records[] are required' });
   }
@@ -35,7 +33,6 @@ exports.submitManual = async (req, res) => {
     const session = await Session.findById(sessionId);
     if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    // Upsert each record — the manual screen always tags rows as 'Manual'
     const ops = records.map(({ studentId, status }) => ({
       updateOne: {
         filter: { studentId, sessionId },
@@ -51,7 +48,6 @@ exports.submitManual = async (req, res) => {
     }));
 
     await Attendance.bulkWrite(ops);
-
     res.status(200).json({ message: 'Attendance saved successfully' });
   } catch (err) {
     console.error(err);
@@ -59,8 +55,6 @@ exports.submitManual = async (req, res) => {
   }
 };
 
-// GET /api/attendance/ledger  — fetch attendance records with optional filters
-// Supports query params: sessionId, studentId, status, section, markedBy, from, to
 exports.getLedger = async (req, res) => {
   const { sessionId, studentId, status, markedBy, from, to } = req.query;
 
@@ -81,7 +75,6 @@ exports.getLedger = async (req, res) => {
       .populate('sessionId', 'className section date subject')
       .sort({ timestamp: -1 });
 
-    // Section filter happens after populate (section lives on the student record)
     if (req.query.section) {
       const wanted = String(req.query.section).toLowerCase();
       records = records.filter((r) => (r.studentId?.section || '').toLowerCase() === wanted);
@@ -94,12 +87,10 @@ exports.getLedger = async (req, res) => {
   }
 };
 
-// PATCH /api/attendance/:id  — correct a single attendance entry (teacher/admin/staff)
 exports.correctEntry = async (req, res) => {
   if (!['teacher', 'admin', 'staff'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Unauthorized' });
   }
-
   const { status } = req.body;
   if (!['Present', 'Late', 'Absent'].includes(status)) {
     return res.status(400).json({ message: 'Invalid status' });
@@ -122,9 +113,19 @@ exports.correctEntry = async (req, res) => {
   }
 };
 
-// GET /api/attendance/risk-analysis  — compute per-student risk using Settings bands.
-// Also includes pattern signals (consecutive absences, total absences) so the
-// AI alerts screen can flag specific reasons.
+exports.removeEntry = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  try {
+    const row = await Attendance.findByIdAndDelete(req.params.id);
+    if (!row) return res.status(404).json({ message: 'Entry not found' });
+    res.json({ message: 'Attendance entry deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 exports.getRiskAnalysis = async (req, res) => {
   try {
     const settings = await loadSettings();
@@ -140,7 +141,6 @@ exports.getRiskAnalysis = async (req, res) => {
       const lateCount     = records.filter((r) => r.status === 'Late').length;
       const attendanceRate = Math.round((attendedCount / totalSessions) * 100);
 
-      // Walk the timeline backwards to count current consecutive-absence streak
       let consecutive = 0;
       for (let i = records.length - 1; i >= 0; i--) {
         if (records[i].status === 'Absent') consecutive++;
@@ -168,7 +168,6 @@ exports.getRiskAnalysis = async (req, res) => {
   }
 };
 
-// GET /api/attendance/summary  — overall KPIs for analytics dashboard
 exports.getSummary = async (req, res) => {
   try {
     const totalSessions = await Session.countDocuments();
@@ -192,7 +191,6 @@ exports.getSummary = async (req, res) => {
   }
 };
 
-// GET /api/attendance/trend?days=14  — daily attendance rate for charting (Fig. 8 / 20)
 exports.getTrend = async (req, res) => {
   try {
     const days = Math.min(parseInt(req.query.days, 10) || 14, 60);

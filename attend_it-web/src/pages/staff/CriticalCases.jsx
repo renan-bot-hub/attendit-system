@@ -1,3 +1,6 @@
+// Critical Cases (Fig. 17). Escalated cases + students past the critical
+// absence threshold. POD can schedule a conference or resolve inline.
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { ShieldAlert, CalendarPlus, CheckCircle2, X } from 'lucide-react';
 import { caseService } from '../../services/caseService';

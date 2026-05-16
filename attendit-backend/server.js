@@ -1,3 +1,6 @@
+// Express + Mongoose entry point. Loads .env, builds the app, mounts
+// every /api/* route module, connects to MongoDB, and listens on PORT.
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -17,12 +20,10 @@ const conferenceRoutes   = require('./routes/conferenceRoutes');
 const sectionRoutes      = require('./routes/sectionRoutes');
 
 const app = express();
-app.set('trust proxy', 1); // required on Render so rate-limit / req.ip work behind the proxy
+app.set('trust proxy', 1);
 
-// 1. MIDDLEWARE
 app.use(express.json({ limit: '2mb' }));
 
-// CORS — allow local dev ports plus any origins in CLIENT_ORIGIN (comma-separated)
 const defaultDev = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
 const fromEnv = (process.env.CLIENT_ORIGIN || '')
   .split(',')
@@ -32,20 +33,17 @@ const allowedOrigins = [...new Set([...defaultDev, ...fromEnv])];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow non-browser tools (no Origin header) and any allow-listed origin
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin not allowed: ${origin}`));
   },
   credentials: true,
 }));
 
-// 2. REQUEST LOGGER
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// 3. HEALTH CHECK
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -55,7 +53,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 4. ROUTES
 app.use('/api/auth',          authRoutes);
 app.use('/api/attendance',    attendanceRoutes);
 app.use('/api/users',         userRoutes);
@@ -69,13 +66,11 @@ app.use('/api/documents',     documentRoutes);
 app.use('/api/conferences',   conferenceRoutes);
 app.use('/api/sections',      sectionRoutes);
 
-// 5. CENTRAL ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({ message: err.message || 'Server error' });
 });
 
-// 6. DATABASE CONNECTION
 if (!process.env.MONGO_URI) {
   console.error('FATAL: MONGO_URI is not set. Add it to .env (local) or Render env vars.');
   process.exit(1);

@@ -1,7 +1,11 @@
+// Cases & Interventions (Fig. 11). Tab counters (Total/Open/Escalated/
+// Resolved), risk-level filter, master/detail layout, escalate-to-POD,
+// and admin-only delete.
+
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search, FileText, CheckCircle, XCircle, AlertCircle, ShieldAlert,
-  Eye, Plus, X, FileDown,
+  Eye, Plus, X, FileDown, Trash2,
 } from 'lucide-react';
 import { caseService } from '../../services/caseService';
 import { userService } from '../../services/userService';
@@ -15,6 +19,7 @@ export default function CaseManager() {
   const role = currentUser?.role;
   const isStaff  = role === 'teacher' || role === 'admin' || role === 'staff';
   const isPOD    = role === 'staff'   || role === 'admin';
+  const isAdmin  = role === 'admin';
 
   const [cases, setCases] = useState([]);
   const [students, setStudents] = useState([]);
@@ -100,6 +105,17 @@ export default function CaseManager() {
       fetchCases();
     } catch (err) {
       setError(err.response?.data?.message || 'Escalation failed.');
+    }
+  };
+
+  const handleDelete = async (c) => {
+    if (!window.confirm(`Delete this case for ${c.student?.name || 'student'}? This cannot be undone.`)) return;
+    try {
+      await caseService.remove(c._id);
+      setCases((cur) => cur.filter((x) => x._id !== c._id));
+      if (selected?._id === c._id) setSelected(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Delete failed.');
     }
   };
 
@@ -312,6 +328,14 @@ export default function CaseManager() {
                       className="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm"
                     >
                       Reopen
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDelete(selected)}
+                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-sm flex items-center"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Delete
                     </button>
                   )}
                 </div>
