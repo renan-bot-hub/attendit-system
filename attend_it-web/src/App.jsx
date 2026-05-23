@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import MainLayout from './components/layout/MainLayout';
 import RoleRoute from './components/auth/RoleRoute';
 import { SchoolProvider } from './context/SchoolContext';
+import { authService } from './services/authService';
 
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
@@ -94,7 +95,7 @@ export default function App() {
 
 // Sends each user to their role-appropriate dashboard from /
 function RoleHome() {
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const user = authService.getCurrentUser();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'admin')   return <Navigate to="/admin"   replace />;
   if (user.role === 'staff')   return <Navigate to="/staff"   replace />;

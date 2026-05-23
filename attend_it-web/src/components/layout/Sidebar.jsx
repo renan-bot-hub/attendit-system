@@ -9,6 +9,7 @@ import {
   Sparkles, ShieldAlert, Megaphone, CalendarDays, FolderCheck, IdCard,
 } from 'lucide-react';
 import { useSchool } from '../../context/useSchool';
+import { authService } from '../../services/authService';
 
 const ICONS = {
   dashboard: LayoutDashboard,
@@ -87,8 +88,7 @@ export default function Sidebar() {
   const { settings } = useSchool();
   const [open, setOpen] = useState(false);
 
-  const userString = localStorage.getItem('user');
-  const user = userString ? JSON.parse(userString) : null;
+  const user = authService.getCurrentUser();
   const role = user?.role || 'teacher';
   const links = NAV[role] || NAV.teacher;
 

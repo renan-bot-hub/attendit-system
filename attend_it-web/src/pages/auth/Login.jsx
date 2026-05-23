@@ -33,7 +33,7 @@ export default function Login() {
         authService.logout();
       }
     } catch (err) {
-      setError(err.response?.data?.msg || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.msg || err.response?.data?.error || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }

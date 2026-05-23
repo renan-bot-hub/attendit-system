@@ -5,12 +5,15 @@ import API from './api';
 
 export const authService = {
   signup: async (userData) => {
-    const response = await API.post('/auth/signup', userData);
+    const response = await API.post('/auth/signup', normalizeUserData(userData));
     return response.data;
   },
 
   login: async (credentials) => {
-    const response = await API.post('/auth/login', credentials);
+    const response = await API.post('/auth/login', {
+      ...credentials,
+      email: normalizeEmail(credentials.email),
+    });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -26,8 +29,28 @@ export const authService = {
 
   getCurrentUser: () => {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    if (!user) return null;
+    try {
+      return JSON.parse(user);
+    } catch {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      return null;
+    }
   },
 
   isAuthenticated: () => !!localStorage.getItem('token'),
 };
+
+function normalizeEmail(email = '') {
+  return email.trim().toLowerCase();
+}
+
+function normalizeUserData(userData) {
+  return {
+    ...userData,
+    name: userData.name?.trim() || '',
+    email: normalizeEmail(userData.email),
+    department: userData.department?.trim() || '',
+  };
+}

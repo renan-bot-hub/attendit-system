@@ -45,7 +45,12 @@ export default function Profile() {
       });
       setMe(res.data);
       // Refresh localStorage cache used by sidebar etc.
-      const cached = JSON.parse(localStorage.getItem('user') || '{}');
+      let cached = {};
+      try {
+        cached = JSON.parse(localStorage.getItem('user') || '{}');
+      } catch {
+        cached = {};
+      }
       localStorage.setItem('user', JSON.stringify({ ...cached, name: res.data.name, email: res.data.email }));
       setProfileMsg({ text: 'Profile updated.', type: 'ok' });
     } catch (err) {

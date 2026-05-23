@@ -32,7 +32,7 @@ export default function Signup() {
       }
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.msg || 'Signup failed.');
+      setError(err.response?.data?.msg || err.response?.data?.error || 'Signup failed.');
     } finally {
       setLoading(false);
     }

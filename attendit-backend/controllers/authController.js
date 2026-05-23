@@ -56,14 +56,21 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({ msg: 'Email and password are required' });
     }
 
     const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(400).json({ msg: 'Invalid credentials' });
+    }
+
     if (!user.isActive) {
       return res.status(403).json({ msg: 'Your account has been deactivated. Contact admin.' });
     }

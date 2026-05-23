@@ -20,10 +20,14 @@ function fileLoadHandler(dir) {
   return {
     load: async () => {
       const modelTopologyJSON = JSON.parse(fs.readFileSync(path.join(dir, 'model.json'), 'utf8'));
-      const weightSpecs = modelTopologyJSON.weightsManifest.flatMap((g) => g.weights);
-      const buffers = modelTopologyJSON.weightsManifest
+      const manifest = modelTopologyJSON.weightsManifest || [];
+      const weightSpecs = manifest.flatMap((g) => g.weights || []);
+      const buffers = manifest
         .map((g) => g.paths.map((p) => fs.readFileSync(path.join(dir, p))))
         .flat();
+      if (buffers.length === 0 || weightSpecs.length === 0) {
+        throw new Error('Risk model weights are missing or invalid.');
+      }
       const totalLen = buffers.reduce((s, b) => s + b.byteLength, 0);
       const merged = new Uint8Array(totalLen);
       let offset = 0;
@@ -53,7 +57,10 @@ async function load() {
     const metaPath = path.join(MODEL_DIR, 'meta.json');
     _meta = fs.existsSync(metaPath) ? JSON.parse(fs.readFileSync(metaPath, 'utf8')) : null;
     return _model;
-  })();
+  })().catch((err) => {
+    _loadPromise = null;
+    throw err;
+  });
   return _loadPromise;
 }
 
@@ -62,8 +69,13 @@ async function predict(signals) {
   const features = extractFeatures(signals);
   const x = tf.tensor2d([features]);
   const out = _model.predict(x);
-  const probs = (await out.data());
+  const y = Array.isArray(out) ? out[0] : out;
+  const probs = await y.data();
   tf.dispose([x, out]);
+
+  if (probs.length !== RISK_TIERS.length) {
+    throw new Error(`Risk model returned ${probs.length} classes; expected ${RISK_TIERS.length}.`);
+  }
 
   let bestIdx = 0;
   for (let i = 1; i < probs.length; i++) if (probs[i] > probs[bestIdx]) bestIdx = i;

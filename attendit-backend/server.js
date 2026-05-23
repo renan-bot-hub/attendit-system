@@ -22,9 +22,12 @@ const sectionRoutes      = require('./routes/sectionRoutes');
 const app = express();
 app.set('trust proxy', 1);
 
-app.use(express.json({ limit: '2mb' }));
-
-const defaultDev = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+// Allow all localhost dev ports (5173-5180) + any configured CLIENT_ORIGIN
+const defaultDev = [
+  'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175',
+  'http://localhost:5176', 'http://localhost:5177', 'http://localhost:5178',
+  'http://localhost:5179', 'http://localhost:5180',
+];
 const fromEnv = (process.env.CLIENT_ORIGIN || '')
   .split(',')
   .map((s) => s.trim())
@@ -37,7 +40,11 @@ app.use(cors({
     return callback(new Error(`CORS: origin not allowed: ${origin}`));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+app.use(express.json({ limit: '2mb' }));
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -80,12 +87,25 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => {
+const PORT = process.env.PORT || 5000;
+
+async function start() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('MongoDB connected successfully');
+
+    const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Set PORT to a free port or stop the other process.`);
+        process.exit(1);
+      }
+      throw err;
+    });
+  } catch (err) {
     console.error('MongoDB connection error:', err.message);
     process.exit(1);
-  });
+  }
+}
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+start();

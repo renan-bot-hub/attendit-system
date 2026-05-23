@@ -14,8 +14,13 @@ const FEATURE_NAMES = [
 
 const RISK_TIERS = ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'];
 
-function extractFeatures(s) {
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v ?? 0));
+function extractFeatures(s = {}) {
+  const clamp = (v, lo, hi) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return lo;
+    return Math.max(lo, Math.min(hi, n));
+  };
+
   return [
     clamp(s.attendanceRate, 0, 100) / 100,
     clamp(s.consecutiveAbsences, 0, 30) / 30,
