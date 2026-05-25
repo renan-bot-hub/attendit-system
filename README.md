@@ -1,1 +1,1 @@
-# attendit-system
+AI Driven Attendance Monitoring
