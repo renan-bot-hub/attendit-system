@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  Sparkles, RefreshCw, AlertTriangle, ShieldAlert, BellRing, ArrowUpRight,
+  RefreshCw, AlertTriangle, ShieldAlert, BellRing, ArrowUpRight,
   CheckCircle2, XCircle, Send,
 } from 'lucide-react';
 import { aiAlertService } from '../../services/aiAlertService';
@@ -90,7 +90,7 @@ export default function AIAlerts() {
       <div className="mb-8 flex flex-wrap gap-4 justify-between items-end">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Sparkles className="w-8 h-8 text-violet-500" /> AI Alerts & Recommendations
+            <ShieldAlert className="w-7 h-7 text-blue-600" /> AI Alerts & Recommendations
           </h1>
           <p className="text-slate-500 mt-2">
             Pattern-detected attendance risks with prescriptive next-step recommendations.
@@ -99,7 +99,7 @@ export default function AIAlerts() {
         <button
           onClick={runAnalysis}
           disabled={running}
-          className="bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-sm"
         >
           <RefreshCw className={`w-4 h-4 ${running ? 'animate-spin' : ''}`} />
           {running ? 'Running…' : 'Run Pattern Analysis'}
@@ -120,7 +120,7 @@ export default function AIAlerts() {
         <p className="text-slate-400 p-8 text-center">Loading…</p>
       ) : alerts.length === 0 ? (
         <div className="bg-white p-10 rounded-2xl border border-slate-200 text-center text-slate-500">
-          <Sparkles className="w-10 h-10 mx-auto text-slate-300 mb-3" />
+          <AlertTriangle className="w-9 h-9 mx-auto text-slate-300 mb-3" />
           <p className="font-medium">No alerts match these filters.</p>
           <p className="text-sm mt-1">Try "Run Pattern Analysis" to scan for new ones.</p>
         </div>
@@ -130,15 +130,15 @@ export default function AIAlerts() {
             <div key={a._id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-xs font-semibold text-slate-400">
                     {a.section || a.student?.section || '—'} • Flagged {new Date(a.flaggedOn).toLocaleDateString()}
                   </p>
-                  <h3 className="text-lg font-black text-slate-900 leading-tight mt-1">
+                  <h3 className="text-lg font-semibold text-slate-900 leading-tight mt-1">
                     {a.student?.name || 'Unknown student'}
                   </h3>
                   <p className="text-xs text-slate-500">{a.student?.studentId || '—'}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${riskStyle(a.riskLevel)}`}>
+                <span className={`px-3 py-1 rounded-full text-[11px] font-semibold border ${riskStyle(a.riskLevel)}`}>
                   {a.riskLevel}
                 </span>
               </div>
@@ -151,11 +151,11 @@ export default function AIAlerts() {
 
               {a.recommendations?.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Recommendations</p>
+                  <p className="text-xs font-semibold text-slate-500 mb-2">Recommendations</p>
                   <ul className="space-y-1.5 text-sm text-slate-700">
                     {a.recommendations.map((r, i) => (
                       <li key={i} className="flex gap-2">
-                        <ArrowUpRight className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
+                        <ArrowUpRight className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                         <span>{r}</span>
                       </li>
                     ))}
@@ -164,7 +164,7 @@ export default function AIAlerts() {
               )}
 
               <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded ${
+                <span className={`text-[11px] font-semibold px-2 py-1 rounded ${
                   a.status === 'New' ? 'bg-blue-50 text-blue-700' :
                   a.status === 'Under Review' ? 'bg-amber-50 text-amber-700' :
                   a.status === 'Actioned' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
@@ -174,7 +174,7 @@ export default function AIAlerts() {
                   {a.status !== 'Actioned' && a.status !== 'Dismissed' && (
                     <button
                       onClick={() => setStatus(a._id, 'Under Review')}
-                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 flex items-center gap-1"
                     >
                       <BellRing className="w-3 h-3" /> Mark Under Review
                     </button>
@@ -182,7 +182,7 @@ export default function AIAlerts() {
                   {a.status !== 'Actioned' && (
                     <button
                       onClick={() => escalate(a._id)}
-                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1"
                     >
                       <ShieldAlert className="w-3 h-3" /> Escalate to POD
                     </button>
@@ -190,7 +190,7 @@ export default function AIAlerts() {
                   {a.status !== 'Dismissed' && (
                     <button
                       onClick={() => setStatus(a._id, 'Dismissed')}
-                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"
                     >
                       <XCircle className="w-3 h-3" /> Dismiss
                     </button>
@@ -214,7 +214,7 @@ export default function AIAlerts() {
 function Stat({ label, value, accent, mono }) {
   return (
     <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+      <p className="text-[11px] font-semibold text-slate-500">{label}</p>
       <p className={`text-sm font-bold ${accent || 'text-slate-800'} ${mono ? 'font-mono tracking-tight' : ''}`}>{value || '—'}</p>
     </div>
   );
@@ -222,12 +222,12 @@ function Stat({ label, value, accent, mono }) {
 
 function Select({ label, value, onChange, options }) {
   return (
-    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex flex-col">
+    <label className="text-sm font-medium text-slate-600 flex flex-col">
       {label}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+        className="mt-1 border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 bg-white focus:outline-none"
       >
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>

@@ -6,4 +6,5 @@ export const sessionService = {
   getSessions:   () => API.get('/sessions'),
   createSession: (data) => API.post('/sessions', data),
   toggleSession: (id) => API.patch(`/sessions/${id}/toggle`),
+  deleteSession: (id) => API.delete(`/sessions/${id}`),
 };

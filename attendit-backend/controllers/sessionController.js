@@ -1,6 +1,7 @@
 // Class-session CRUD. Teachers see their own; admin sees all.
 
 const Session = require('../models/Session');
+const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
 
 exports.getSessions = async (req, res) => {
@@ -53,5 +54,30 @@ exports.toggleSession = async (req, res) => {
     res.json({ message: `Session ${session.active ? 'activated' : 'deactivated'}`, session });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.deleteSession = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid session ID' });
+    }
+
+    const session = await Session.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+
+    if (req.user.role !== 'admin' && session.teacherId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not your session' });
+    }
+
+    const attendanceResult = await Attendance.deleteMany({ sessionId: session._id });
+    await session.deleteOne();
+
+    res.json({
+      message: 'Session deleted',
+      deletedAttendance: attendanceResult.deletedCount || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

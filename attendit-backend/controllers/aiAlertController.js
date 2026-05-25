@@ -8,6 +8,7 @@ const Attendance = require('../models/Attendance');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Case = require('../models/Case');
+const mongoose = require('mongoose');
 const riskModel = require('../ml/riskModel');
 
 riskModel.load().catch((err) => {
@@ -228,7 +229,11 @@ exports.updateAlert = async (req, res) => {
     const patch = {};
     if (status) patch.status = status;
     if (linkedCase !== undefined) patch.linkedCase = linkedCase;
-    patch.reviewedBy = req.user.id;
+
+    const reviewerId = req.user.id || req.user._id || req.user.userId;
+    if (mongoose.Types.ObjectId.isValid(reviewerId)) {
+      patch.reviewedBy = reviewerId;
+    }
     patch.reviewedAt = new Date();
 
     const alert = await AIAlert.findByIdAndUpdate(req.params.id, patch, { new: true })

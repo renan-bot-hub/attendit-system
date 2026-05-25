@@ -6,7 +6,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, ClipboardCheck, BookOpen, MessageCircle, FileText,
   BarChart3, Settings, FileBarChart, UserCircle, LogOut, GraduationCap, Menu, X,
-  Sparkles, ShieldAlert, Megaphone, CalendarDays, FolderCheck, IdCard,
+  ShieldAlert, Megaphone, CalendarDays, FolderCheck, IdCard,
 } from 'lucide-react';
 import { useSchool } from '../../context/useSchool';
 import { authService } from '../../services/authService';
@@ -20,7 +20,7 @@ const ICONS = {
   inbox: MessageCircle,
   cases: FileText,
   documents: FolderCheck,
-  alerts: Sparkles,
+  alerts: ShieldAlert,
   analytics: BarChart3,
   config: Settings,
   reports: FileBarChart,
@@ -107,20 +107,20 @@ export default function Sidebar() {
   }[role] || 'text-blue-400';
 
   const content = (
-    <div className="w-64 bg-slate-900 text-white h-full flex flex-col shadow-2xl">
-      <div className="p-5 border-b border-slate-800">
+    <div className="w-64 bg-[#172033] text-white h-full flex flex-col border-r border-slate-800">
+      <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-2 mb-1">
-          <GraduationCap className="w-7 h-7 text-blue-500" />
-          <h2 className="text-lg font-black text-white tracking-tight leading-tight truncate">
+          <GraduationCap className="w-6 h-6 text-blue-300" />
+          <h2 className="text-base font-semibold text-white leading-tight truncate">
             {settings.schoolName}
           </h2>
         </div>
-        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+        <p className="text-slate-400 text-[11px] font-medium">
           {settings.schoolType} school • AY {settings.academicYear}
         </p>
       </div>
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {links.map((link) => {
           const Icon = ICONS[link.key] || LayoutDashboard;
           const isActive = location.pathname === link.path;
@@ -131,8 +131,8 @@ export default function Sidebar() {
               onClick={() => setOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                 isActive
-                  ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-900/50'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'
+                  ? 'bg-blue-500/15 text-white font-semibold border border-blue-400/30'
+                  : 'text-slate-300 hover:bg-white/5 hover:text-white font-medium border border-transparent'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -142,21 +142,21 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-white/10">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold">
+          <div className="w-9 h-9 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-sm font-semibold">
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-white truncate">{user?.name || 'User'}</p>
-            <p className={`text-[10px] font-black uppercase tracking-widest ${roleAccent}`}>
+            <p className="text-sm font-semibold text-white truncate">{user?.name || 'User'}</p>
+            <p className={`text-[11px] font-semibold ${roleAccent}`}>
               {ROLE_LABEL[role] || role}
             </p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-red-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg transition-all text-xs font-bold"
+          className="w-full flex items-center justify-center gap-2 bg-white/[0.08] hover:bg-white/[0.12] text-slate-200 hover:text-white px-3 py-2 rounded-lg transition-all text-xs font-semibold border border-white/10"
         >
           <LogOut className="w-3.5 h-3.5" /> Sign Out
         </button>
@@ -166,10 +166,10 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-slate-900 text-white px-4 py-3 flex items-center justify-between z-20 shadow-md">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-[#172033] text-white px-4 py-3 flex items-center justify-between z-20 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <GraduationCap className="w-5 h-5 text-blue-500" />
-          <span className="font-bold text-sm truncate">{settings.schoolName}</span>
+          <GraduationCap className="w-5 h-5 text-blue-300" />
+          <span className="font-semibold text-sm truncate">{settings.schoolName}</span>
         </div>
         <button onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu className="w-5 h-5" />

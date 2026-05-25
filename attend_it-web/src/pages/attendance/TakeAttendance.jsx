@@ -2,7 +2,7 @@
 // quick "create new session" modal and bulk "Mark All Present" action.
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, Save, CheckSquare, Plus } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Save, CheckSquare, Plus, Trash2 } from 'lucide-react';
 import { attendService } from '../../services/attendService';
 import { userService } from '../../services/userService';
 import { sessionService } from '../../services/sessionService';
@@ -104,6 +104,32 @@ export default function TakeAttendance() {
     }
   };
 
+  const handleDeleteSession = async () => {
+    if (!activeSession) return;
+    const label = `${activeSession.className} - ${activeSession.section}`;
+    const ok = window.confirm(
+      `Delete session "${label}"?\n\nAny attendance records saved for this session will also be removed.`
+    );
+    if (!ok) return;
+
+    try {
+      await sessionService.deleteSession(activeSession._id);
+      const nextSessions = sessions.filter((s) => s._id !== activeSession._id);
+      setSessions(nextSessions);
+      if (nextSessions.length > 0) {
+        setActiveSessionId(nextSessions[0]._id);
+        localStorage.setItem('activeSessionId', nextSessions[0]._id);
+      } else {
+        setActiveSessionId('');
+        localStorage.removeItem('activeSessionId');
+      }
+      setSuccessMsg('Session deleted.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete session.');
+    }
+  };
+
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
@@ -153,6 +179,14 @@ export default function TakeAttendance() {
         >
           <Plus className="w-4 h-4 mr-1" /> New Session
         </button>
+        {activeSession && (
+          <button
+            onClick={handleDeleteSession}
+            className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-bold flex items-center"
+          >
+            <Trash2 className="w-4 h-4 mr-1" /> Delete
+          </button>
+        )}
       </div>
 
       {error && (

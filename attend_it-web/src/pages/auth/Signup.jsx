@@ -39,12 +39,12 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="max-w-lg w-full bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-5 md:p-8">
+      <div className="max-w-lg w-full bg-white p-6 md:p-7 rounded-xl shadow-sm border border-slate-200">
         <div className="text-center mb-6">
-          <GraduationCap className="w-10 h-10 text-blue-600 mx-auto mb-2" />
-          <h1 className="text-2xl font-black text-slate-900">{settings.schoolName}</h1>
-          <p className="text-slate-500 text-xs uppercase tracking-widest font-bold mt-1">Create Account</p>
+          <GraduationCap className="w-9 h-9 text-blue-600 mx-auto mb-2" />
+          <h1 className="text-xl font-semibold text-slate-900">{settings.schoolName}</h1>
+          <p className="text-slate-500 text-sm font-medium mt-1">Create account</p>
         </div>
 
         {error && (
@@ -89,7 +89,7 @@ export default function Signup() {
               className="auth-input" />
           </Field>
 
-          <p className="text-xs text-slate-500 italic">
+          <p className="text-xs text-slate-500 leading-5">
             Administrator accounts can only be created from inside the system by an existing admin.
             Students are managed as records by the admin (no web login); parents access the system via the mobile app.
           </p>
@@ -97,17 +97,15 @@ export default function Signup() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <UserPlus className="w-4 h-4" /> {loading ? 'Creating…' : 'Create Account'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account? <Link to="/login" className="text-blue-600 font-bold hover:underline">Log in</Link>
+          Already have an account? <Link to="/login" className="text-blue-600 font-semibold hover:underline">Log in</Link>
         </p>
-
-        <style>{`.auth-input{width:100%;padding:.625rem .75rem;background:#fff;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;outline:none}.auth-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
       </div>
     </div>
   );
@@ -117,7 +115,7 @@ export default function Signup() {
 function Field({ label, required, children }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+      <label className="block text-sm font-medium text-slate-600 mb-1.5">
         {label}{required && <span className="text-red-500"> *</span>}
       </label>
       {children}

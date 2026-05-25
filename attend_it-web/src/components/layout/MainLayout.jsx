@@ -14,10 +14,10 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="app-shell flex h-screen overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto w-full pt-14 md:pt-0">
-        <div className="p-4 md:p-8">
+        <div className="app-content px-4 py-5 md:px-6 md:py-6">
           <Outlet />
         </div>
       </main>
