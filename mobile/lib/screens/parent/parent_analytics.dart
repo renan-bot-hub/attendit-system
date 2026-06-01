@@ -344,25 +344,32 @@ Keep encouraging:
                 ),
               ),
             ),
+
             const SizedBox(height: 25),
-            const SizedBox(height: 25),
-            _buildAIPrescriptionCard(),
+
+            _buildAIPrescriptionCard(
+              fallbackText: recommendation,
+              fallbackColor: recommendationColor,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAIPrescriptionCard() {
+  Widget _buildAIPrescriptionCard({
+    required String fallbackText,
+    required Color fallbackColor,
+  }) {
     if (isLoadingAI) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 128, 36, 36).withOpacity(0.08),
+          color: fallbackColor.withOpacity(0.10),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: const Color.fromARGB(255, 128, 36, 36),
+            color: fallbackColor,
             width: 2,
           ),
         ),
@@ -373,7 +380,7 @@ Keep encouraging:
             ),
             SizedBox(height: 12),
             Text(
-              "Generating AI prescription...",
+              "Generating attendance recommendation...",
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -385,26 +392,9 @@ Keep encouraging:
     }
 
     if (aiError.isNotEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.10),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: Colors.red,
-            width: 2,
-          ),
-        ),
-        child: Text(
-          "AI Prescription Unavailable\n\n$aiError",
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 15,
-            height: 1.5,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+      return _buildRecommendationCard(
+        text: fallbackText,
+        color: fallbackColor,
       );
     }
 
@@ -479,6 +469,33 @@ Keep encouraging:
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationCard({
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: color,
+          width: 2,
+        ),
+      ),
+      child: Text(
+        text.trim(),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 15,
+          height: 1.6,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

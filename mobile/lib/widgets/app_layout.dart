@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../models/user_model.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/parent/parent_profile.dart';
 
+import '../screens/parent/parent_profile.dart';
 import '../screens/parent/parent_home.dart';
 import '../screens/parent/parent_attendance.dart';
 import '../screens/parent/parent_analytics.dart';
@@ -29,8 +30,9 @@ class AppLayout extends StatefulWidget {
 
 class _AppLayoutState extends State<AppLayout> {
   int _selectedIndex = 0;
-
   late UserModel user;
+
+  String get _role => user.role.toLowerCase().trim();
 
   @override
   void initState() {
@@ -42,55 +44,43 @@ class _AppLayoutState extends State<AppLayout> {
     switch (_selectedIndex) {
       case 0:
         return "Home";
-
       case 1:
         return "Attendance";
-
       case 2:
         return "Analytics";
-
       case 3:
         return "Messages";
-
       default:
         return "AttendIT";
     }
   }
 
   Widget _getScreen() {
-    if (user.role.toLowerCase() == "parent") {
+    if (_role == "parent") {
       switch (_selectedIndex) {
         case 0:
           return ParentHome(user: user);
-
         case 1:
           return ParentAttendance(user: user);
-
         case 2:
           return ParentAnalytics(user: user);
-
         case 3:
           return const ParentMessage();
-
         default:
           return ParentHome(user: user);
       }
     }
 
-    if (user.role.toLowerCase() == "teacher") {
+    if (_role == "teacher") {
       switch (_selectedIndex) {
         case 0:
           return TeacherHome(user: user);
-
         case 1:
           return TeacherAttendance(user: user);
-
         case 2:
           return TeacherAnalytics(user: user);
-
         case 3:
           return const TeacherMessage();
-
         default:
           return TeacherHome(user: user);
       }
@@ -133,9 +123,7 @@ class _AppLayoutState extends State<AppLayout> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: const Text(
-            "Are you sure you want to logout?",
-          ),
+          content: const Text("Are you sure you want to logout?"),
           actions: [
             TextButton(
               onPressed: () {
@@ -147,15 +135,15 @@ class _AppLayoutState extends State<AppLayout> {
               onPressed: () {
                 Navigator.pop(dialogContext);
 
-                Future.microtask(() {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LoginScreen(),
-                    ),
-                    (route) => false,
-                  );
-                });
+                if (!mounted) return;
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
+                  ),
+                  (route) => false,
+                );
               },
               child: const Text(
                 "Logout",
@@ -169,6 +157,45 @@ class _AppLayoutState extends State<AppLayout> {
         );
       },
     );
+  }
+
+  void _openNotifications() {
+    if (_role == "parent") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ParentAlertScreen(user: user),
+        ),
+      );
+      return;
+    }
+
+    if (_role == "teacher") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const TeacherAlert(),
+        ),
+      );
+      return;
+    }
+  }
+
+  Future<void> _openProfile() async {
+    final updatedUser = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileScreen(user: user),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (updatedUser != null && updatedUser is UserModel) {
+      setState(() {
+        user = updatedUser;
+      });
+    }
   }
 
   @override
@@ -196,46 +223,11 @@ class _AppLayoutState extends State<AppLayout> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications),
-            onPressed: () {
-              if (user.role.toLowerCase() == "parent") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ParentAlertScreen(),
-                  ),
-                );
-
-                return;
-              }
-
-              if (user.role.toLowerCase() == "teacher") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TeacherAlert(),
-                  ),
-                );
-
-                return;
-              }
-            },
+            onPressed: _openNotifications,
           ),
           IconButton(
             icon: const Icon(Icons.person),
-            onPressed: () async {
-              final updatedUser = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfileScreen(user: user),
-                ),
-              );
-
-              if (updatedUser != null && updatedUser is UserModel) {
-                setState(() {
-                  user = updatedUser;
-                });
-              }
-            },
+            onPressed: _openProfile,
           ),
         ],
       ),

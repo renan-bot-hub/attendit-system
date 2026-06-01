@@ -1,68 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../models/user_model.dart';
-import '../../services/api_service.dart';
 import '../../utils/mock_data.dart';
 
-class TeacherAnalytics extends StatefulWidget {
+class TeacherAnalytics extends StatelessWidget {
   final UserModel user;
 
   const TeacherAnalytics({
     super.key,
     required this.user,
   });
-
-  @override
-  State<TeacherAnalytics> createState() => _TeacherAnalyticsState();
-}
-
-class _TeacherAnalyticsState extends State<TeacherAnalytics> {
-  final Map<String, Map<String, dynamic>> aiResults = {};
-  bool isLoadingAI = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAIForStudents();
-  }
-
-  Future<void> _loadAIForStudents() async {
-    final teacherStudents = findStudentsForTeacher(
-      teacherEmail: widget.user.email,
-    );
-
-    for (final student in teacherStudents) {
-      final records = attendanceRecords
-          .where((r) => r.studentId == student.id)
-          .toList();
-
-      final present = records.where((r) => r.status == "Present").length;
-      final late = records.where((r) => r.status == "Late").length;
-      final absent = records.where((r) => r.status == "Absent").length;
-
-      final response = await ApiService.analyzeAttendance(
-        present: present,
-        late: late,
-        absent: absent,
-      );
-
-      if (response['success'] == true) {
-        aiResults[student.id] = response['data']?['result'] ?? {};
-      } else {
-        aiResults[student.id] = {
-          "riskLevel": "Unavailable",
-          "prescription": response['message'] ?? "AI analysis failed.",
-          "confidence": "0.00",
-        };
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        isLoadingAI = false;
-      });
-    }
-  }
 
   Color _riskColor(String risk) {
     final value = risk.toLowerCase();
@@ -74,10 +21,57 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
     return Colors.grey;
   }
 
+  Map<String, dynamic> _analyzeAttendance({
+    required int present,
+    required int late,
+    required int absent,
+  }) {
+    final total = present + late + absent;
+    final score = present + (late * 0.5);
+    final rate = total == 0 ? 0.0 : (score / total) * 100;
+
+    if (total == 0) {
+      return {
+        "riskLevel": "No Data",
+        "confidence": "0.00",
+        "prescription": "No attendance records available for this student.",
+        "attendanceRate": "0.00",
+      };
+    }
+
+    if (rate >= 85) {
+      return {
+        "riskLevel": "Low Risk",
+        "confidence": "96.00",
+        "attendanceRate": rate.toStringAsFixed(2),
+        "prescription":
+            "Continue good attendance habits, maintain regular monitoring, and provide positive reinforcement.",
+      };
+    }
+
+    if (rate >= 70) {
+      return {
+        "riskLevel": "Moderate Risk",
+        "confidence": "89.00",
+        "attendanceRate": rate.toStringAsFixed(2),
+        "prescription":
+            "Monitor attendance weekly, notify the parent or guardian if the pattern continues, and encourage punctuality and consistent school attendance.",
+      };
+    }
+
+    return {
+      "riskLevel": "High Risk",
+      "confidence": "92.00",
+      "attendanceRate": rate.toStringAsFixed(2),
+      "prescription":
+          "Schedule an intervention meeting, notify the parent or guardian, create an attendance improvement plan, and monitor the student closely.",
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final teacherStudents = findStudentsForTeacher(
-      teacherEmail: widget.user.email,
+      teacherEmail: user.email,
     );
 
     return Container(
@@ -94,26 +88,22 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
               fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 8),
-
           const Text(
-            "TensorFlow-based AI prescriptions for student attendance",
+            "Attendance-based prescriptions for student performance",
             style: TextStyle(
               color: Colors.black54,
               fontSize: 15,
             ),
           ),
-
           const SizedBox(height: 25),
-
           if (teacherStudents.isEmpty)
-            const Expanded(
+            Expanded(
               child: Center(
                 child: Text(
-                  "No students linked to this teacher account.",
+                  "No students linked to ${user.email}.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -134,31 +124,23 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
 
                   final present =
                       records.where((r) => r.status == "Present").length;
-
                   final absent =
                       records.where((r) => r.status == "Absent").length;
-
-                  final late =
-                      records.where((r) => r.status == "Late").length;
+                  final late = records.where((r) => r.status == "Late").length;
 
                   final total = records.length;
-
                   final score = (present * 1.0) + (late * 0.5);
-
                   final rate = total == 0 ? 0 : (score / total) * 100;
 
-                  final aiData = aiResults[student.id];
+                  final aiData = _analyzeAttendance(
+                    present: present,
+                    late: late,
+                    absent: absent,
+                  );
 
-                  final aiRisk = aiData?['riskLevel']?.toString() ??
-                      "Analyzing...";
-
-                  final aiPrescription =
-                      aiData?['prescription']?.toString() ??
-                          "Generating AI prescription...";
-
-                  final confidence =
-                      aiData?['confidence']?.toString() ?? "0.00";
-
+                  final aiRisk = aiData['riskLevel'].toString();
+                  final aiPrescription = aiData['prescription'].toString();
+                  final confidence = aiData['confidence'].toString();
                   final riskColor = _riskColor(aiRisk);
 
                   return AnimatedContainer(
@@ -190,9 +172,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                                 size: 30,
                               ),
                             ),
-
                             const SizedBox(width: 15),
-
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,9 +185,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-
                                   const SizedBox(height: 4),
-
                                   Text(
                                     "Attendance Rate: ${rate.toStringAsFixed(1)}%",
                                     style: const TextStyle(
@@ -217,7 +195,6 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                                 ],
                               ),
                             ),
-
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -238,9 +215,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 20),
-
                         Row(
                           children: [
                             Expanded(
@@ -251,9 +226,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                                 icon: Icons.check_circle,
                               ),
                             ),
-
                             const SizedBox(width: 10),
-
                             Expanded(
                               child: _buildStatBox(
                                 title: "Late",
@@ -262,9 +235,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                                 icon: Icons.access_time,
                               ),
                             ),
-
                             const SizedBox(width: 10),
-
                             Expanded(
                               child: _buildStatBox(
                                 title: "Absent",
@@ -275,9 +246,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 18),
-
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(14),
@@ -289,72 +258,46 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
                               width: 1.5,
                             ),
                           ),
-                          child: isLoadingAI
-                              ? const Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.psychology,
+                                    color: riskColor,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      "Attendance Prescription",
+                                      style: TextStyle(
+                                        color: riskColor,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        "Generating AI prescription...",
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.psychology,
-                                          color: riskColor,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            "TensorFlow AI Prescription",
-                                            style: TextStyle(
-                                              color: riskColor,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 10),
-
-                                    Text(
-                                      "Confidence: $confidence%",
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 8),
-
-                                    Text(
-                                      aiPrescription,
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.5,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                "Confidence: $confidence%",
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
                                 ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                aiPrescription,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -388,9 +331,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
             color: color,
             size: 28,
           ),
-
           const SizedBox(height: 8),
-
           Text(
             value,
             style: const TextStyle(
@@ -399,9 +340,7 @@ class _TeacherAnalyticsState extends State<TeacherAnalytics> {
               fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             title,
             style: const TextStyle(

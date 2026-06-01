@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,21 +6,26 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  static const Duration _timeout = Duration(seconds: 40);
+
   static String get baseUrl {
     if (kIsWeb) {
       return 'http://127.0.0.1:5001/api';
-    } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5001/api';
-    } else {
-      return 'http://127.0.0.1:5001/api';
     }
+
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5001/api';
+    }
+
+    return 'http://127.0.0.1:5001/api';
   }
 
   static Map<String, String> _headers({String? token}) {
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      if (token != null && token.trim().isNotEmpty)
+        'Authorization': 'Bearer ${token.trim()}',
     };
   }
 
@@ -32,9 +38,9 @@ class ApiService {
     final uri = Uri.parse('$baseUrl$endpoint');
 
     try {
-      http.Response response;
+      late http.Response response;
 
-      switch (method) {
+      switch (method.toUpperCase()) {
         case 'POST':
           response = await http
               .post(
@@ -42,7 +48,7 @@ class ApiService {
                 headers: _headers(token: token),
                 body: jsonEncode(body ?? {}),
               )
-              .timeout(const Duration(seconds: 40));
+              .timeout(_timeout);
           break;
 
         case 'PUT':
@@ -52,7 +58,17 @@ class ApiService {
                 headers: _headers(token: token),
                 body: jsonEncode(body ?? {}),
               )
-              .timeout(const Duration(seconds: 40));
+              .timeout(_timeout);
+          break;
+
+        case 'DELETE':
+          response = await http
+              .delete(
+                uri,
+                headers: _headers(token: token),
+                body: jsonEncode(body ?? {}),
+              )
+              .timeout(_timeout);
           break;
 
         case 'GET':
@@ -62,11 +78,21 @@ class ApiService {
                 uri,
                 headers: _headers(token: token),
               )
-              .timeout(const Duration(seconds: 40));
+              .timeout(_timeout);
           break;
       }
 
       return _handleResponse(response);
+    } on TimeoutException {
+      return {
+        'success': false,
+        'message': 'Request timed out. Please check your connection.',
+      };
+    } on SocketException {
+      return {
+        'success': false,
+        'message': 'Cannot connect to server. Make sure backend is running.',
+      };
     } catch (e) {
       return {
         'success': false,
@@ -77,7 +103,7 @@ class ApiService {
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
     try {
-      if (response.body.isEmpty) {
+      if (response.body.trim().isEmpty) {
         return {
           'success': false,
           'message': 'Empty server response',
@@ -96,9 +122,13 @@ class ApiService {
         };
       }
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      final bool isSuccessStatus =
+          response.statusCode >= 200 && response.statusCode < 300;
+
+      if (isSuccessStatus) {
         return {
-          'success': true,
+          'success': decoded['success'] ?? true,
+          'message': decoded['message'] ?? decoded['msg'] ?? 'Request successful',
           'data': decoded,
           'statusCode': response.statusCode,
         };
@@ -106,15 +136,19 @@ class ApiService {
 
       return {
         'success': false,
-        'message': decoded['message'] ?? 'Server error (${response.statusCode})',
+        'message': decoded['message'] ??
+            decoded['msg'] ??
+            decoded['error'] ??
+            'Server error (${response.statusCode})',
         'statusCode': response.statusCode,
         'data': decoded,
       };
-    } catch (e) {
+    } catch (_) {
       return {
         'success': false,
-        'message': 'Server returned invalid data: ${response.body}',
+        'message': 'Server returned invalid data',
         'statusCode': response.statusCode,
+        'raw': response.body,
       };
     }
   }
@@ -201,7 +235,7 @@ class ApiService {
   static Future<Map<String, dynamic>> sendOTP(String email) {
     return _request(
       method: 'POST',
-      endpoint: '/otp/send',
+      endpoint: '/auth/send-otp',
       body: {
         'email': email.trim(),
       },
@@ -214,14 +248,13 @@ class ApiService {
   ) {
     return _request(
       method: 'POST',
-      endpoint: '/otp/verify',
+      endpoint: '/auth/verify-otp',
       body: {
         'email': email.trim(),
         'otp': otp.trim(),
       },
     );
   }
-
 
   static Future<Map<String, dynamic>> analyzeAttendance({
     required int present,
