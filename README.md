@@ -1,6 +1,6 @@
 # AI Driven Attendance Monitoring
 
-Attend IT is a school attendance and intervention system with:
+Attend IT:
 
 - `backend`: Express, Mongoose, MongoDB Atlas API.
 - `frontend`: React/Vite web dashboard.
