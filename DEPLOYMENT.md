@@ -83,7 +83,45 @@ You now have:
 - API at `https://attendit-backend.onrender.com`
 - Web at `https://attendit-web.onrender.com`
 
-### 2b. Manual setup (if you skip the blueprint)
+### 2b. Continuous deployment through GitHub Actions
+
+This repository includes `.github/workflows/deploy.yml`. On every push to
+`main`, GitHub Actions will:
+
+1. install backend dependencies
+2. run backend tests
+3. install frontend dependencies
+4. lint and build the frontend
+5. trigger Render deploy hooks for the backend and frontend
+
+To finish setup:
+
+1. In Render, open the **attendit-backend** service.
+2. Go to **Settings** → **Deploy Hook** and copy the deploy hook URL.
+3. In GitHub, open the repository → **Settings** → **Secrets and variables** →
+   **Actions** → **New repository secret**.
+4. Add this secret:
+   ```txt
+   RENDER_BACKEND_DEPLOY_HOOK_URL
+   ```
+   Paste the backend deploy hook URL as the value.
+5. In Render, open the **attendit-web** service and copy its deploy hook URL.
+6. Add another GitHub Actions repository secret:
+   ```txt
+   RENDER_WEB_DEPLOY_HOOK_URL
+   ```
+   Paste the frontend deploy hook URL as the value.
+7. Push to `main`, or open GitHub → **Actions** → **CI and Deploy** → **Run workflow**.
+
+Keep `MONGO_URI`, `JWT_SECRET`, `CLIENT_ORIGIN`, and `VITE_API_URL` in Render's
+environment variables. Do not put those values inside the GitHub workflow.
+
+> If Render's normal auto-deploy is already enabled, each push can trigger a
+> Render deploy directly and another deploy from GitHub Actions. To make GitHub
+> Actions the gatekeeper, turn off auto-deploy in each Render service and let
+> the workflow trigger deploy hooks only after tests pass.
+
+### 2c. Manual setup (if you skip the blueprint)
 
 **Backend (Web Service)**
 | Setting | Value |
