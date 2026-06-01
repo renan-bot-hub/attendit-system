@@ -1,2 +1,0 @@
-# Attend-IT-Mobile
-
