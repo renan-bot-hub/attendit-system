@@ -10,9 +10,9 @@
 services:
   # --- Backend API (Node + Express) ---
   - type: web
-    name: attendit-backend
+    name: backend
     runtime: node
-    rootDir: attendit-backend
+    rootDir: backend
     plan: free
     buildCommand: npm install
     startCommand: npm start
@@ -25,19 +25,19 @@ services:
       - key: JWT_SECRET
         sync: false        # set this in the Render dashboard (long random string)
       - key: CLIENT_ORIGIN
-        sync: false        # set to your frontend URL, e.g. https://attendit-web.onrender.com
+        sync: false        # set to your frontend URL, e.g. https://frontend.onrender.com
 
   # --- Frontend (Vite static site) ---
   - type: web
-    name: attendit-web
+    name: frontend
     runtime: static
-    rootDir: attend_it-web
+    rootDir: frontend
     plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        sync: false        # set to your backend URL + /api, e.g. https://attendit-backend.onrender.com/api
+        sync: false        # set to your backend URL + /api, e.g. https://backend.onrender.com/api
     routes:
       # SPA fallback: every unknown path returns index.html so React Router can take over
       - type: rewrite

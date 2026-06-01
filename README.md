@@ -2,8 +2,8 @@
 
 Attend IT is a school attendance and intervention system with:
 
-- `attendit-backend`: Express, Mongoose, MongoDB Atlas API.
-- `attend_it-web`: React/Vite web dashboard.
+- `backend`: Express, Mongoose, MongoDB Atlas API.
+- `frontend`: React/Vite web dashboard.
 - `attend_it`: unified MongoDB database for web and mobile data.
 
 ## Common Commands
@@ -18,7 +18,7 @@ npm.cmd run lint:web
 Backend-only:
 
 ```powershell
-cd attendit-backend
+cd backend
 npm.cmd install
 npm.cmd test
 npm.cmd run dev

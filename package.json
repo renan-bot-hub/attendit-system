@@ -2,11 +2,11 @@
   "name": "attend-it-system",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix attend_it-web run dev -- --host localhost --port 5175",
-    "dev:backend": "npm --prefix attendit-backend run dev",
-    "dev:web": "npm --prefix attend_it-web run dev -- --host localhost --port 5175",
-    "start:backend": "npm --prefix attendit-backend run start",
-    "build:web": "npm --prefix attend_it-web run build",
-    "lint:web": "npm --prefix attend_it-web run lint"
+    "dev": "npm --prefix frontend run dev -- --host localhost --port 5175",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev -- --host localhost --port 5175",
+    "start:backend": "npm --prefix backend run start",
+    "build:web": "npm --prefix frontend run build",
+    "lint:web": "npm --prefix frontend run lint"
   }
 }

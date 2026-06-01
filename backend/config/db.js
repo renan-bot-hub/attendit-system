@@ -42,7 +42,7 @@ function formatMongoError(err) {
   if (isBadAuthError(err)) {
     return [
       `MongoDB authentication failed while connecting to ${describeMongoUri(process.env.MONGO_URI)}.`,
-      'Check the username/password in attendit-backend/.env against your MongoDB Atlas Database Access user.',
+      'Check the username/password in backend/.env against your MongoDB Atlas Database Access user.',
       'If the password contains special characters like @, :, /, ?, #, [, ], or %, URL-encode it before putting it in MONGO_URI.',
       `Original error: ${err.message}`,
     ].join('\n');
@@ -53,7 +53,7 @@ function formatMongoError(err) {
 
 async function connectDB(options = {}) {
   if (!process.env.MONGO_URI) {
-    throw new Error('MONGO_URI is not set. Add it to attendit-backend/.env or your deployment environment.');
+    throw new Error('MONGO_URI is not set. Add it to backend/.env or your deployment environment.');
   }
 
   const timeout = Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || DEFAULT_SERVER_SELECTION_TIMEOUT_MS;

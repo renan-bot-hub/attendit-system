@@ -25,8 +25,8 @@ yarn-error.log*
 # Misc
 .cache/
 attendit-db-import/
-attendit-backend/ml/private-data/
-attendit-backend/ml/training-data*.csv
-attendit-backend/ml/training-data*.json
-!attendit-backend/ml/training-data.example.csv
-!attendit-backend/ml/training-data.example.json
+backend/ml/private-data/
+backend/ml/training-data*.csv
+backend/ml/training-data*.json
+!backend/ml/training-data.example.csv
+!backend/ml/training-data.example.json

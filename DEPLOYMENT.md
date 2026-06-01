@@ -38,7 +38,7 @@ Free tier (M0) is enough for a capstone demo.
 You can use the existing `seed.js`. Temporarily point your local `.env` at Atlas:
 
 ```bash
-# attendit-backend/.env  (local file — already gitignored)
+# backend/.env  (local file — already gitignored)
 MONGO_URI=mongodb+srv://attendit-app:YOURPASS@cluster0.xxxxx.mongodb.net/attend_it?retryWrites=true&w=majority
 JWT_SECRET=anything_for_local
 ```
@@ -46,7 +46,7 @@ JWT_SECRET=anything_for_local
 Then run:
 
 ```bash
-cd attendit-backend
+cd backend
 npm run seed
 ```
 
@@ -64,24 +64,24 @@ There's a `render.yaml` at the repo root that describes both services.
 
 1. Go to https://dashboard.render.com → **New** → **Blueprint**.
 2. Connect your GitHub account and pick the repo.
-3. Render reads `render.yaml` and proposes **attendit-backend** + **attendit-web**.
+3. Render reads `render.yaml` and proposes **backend** + **frontend**.
 4. It will ask you to fill in the secret env vars before applying:
-   - **attendit-backend → MONGO_URI** = the Atlas connection string from Part 1.
-   - **attendit-backend → JWT_SECRET** = a long random string. Generate one with:
+   - **backend → MONGO_URI** = the Atlas connection string from Part 1.
+   - **backend → JWT_SECRET** = a long random string. Generate one with:
      ```bash
      node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
      ```
-   - **attendit-backend → CLIENT_ORIGIN** = leave blank for now, we'll fill it in step 5.
-   - **attendit-web → VITE_API_URL** = leave blank for now, we'll fill it in step 5.
+   - **backend → CLIENT_ORIGIN** = leave blank for now, we'll fill it in step 5.
+   - **frontend → VITE_API_URL** = leave blank for now, we'll fill it in step 5.
 5. Click **Apply**. Render starts building. The backend will deploy first.
-6. After the backend deploys, copy its URL (something like `https://attendit-backend.onrender.com`).
-7. Edit **attendit-web → VITE_API_URL** = `https://attendit-backend.onrender.com/api` → trigger a redeploy.
-8. After the frontend deploys, copy its URL (something like `https://attendit-web.onrender.com`).
-9. Edit **attendit-backend → CLIENT_ORIGIN** = the frontend URL → trigger a redeploy.
+6. After the backend deploys, copy its URL (something like `https://backend.onrender.com`).
+7. Edit **frontend → VITE_API_URL** = `https://backend.onrender.com/api` → trigger a redeploy.
+8. After the frontend deploys, copy its URL (something like `https://frontend.onrender.com`).
+9. Edit **backend → CLIENT_ORIGIN** = the frontend URL → trigger a redeploy.
 
 You now have:
-- API at `https://attendit-backend.onrender.com`
-- Web at `https://attendit-web.onrender.com`
+- API at `https://backend.onrender.com`
+- Web at `https://frontend.onrender.com`
 
 ### 2b. Continuous deployment through GitHub Actions
 
@@ -96,7 +96,7 @@ This repository includes `.github/workflows/deploy.yml`. On every push to
 
 To finish setup:
 
-1. In Render, open the **attendit-backend** service.
+1. In Render, open the **backend** service.
 2. Go to **Settings** → **Deploy Hook** and copy the deploy hook URL.
 3. In GitHub, open the repository → **Settings** → **Secrets and variables** →
    **Actions** → **New repository secret**.
@@ -105,7 +105,7 @@ To finish setup:
    RENDER_BACKEND_DEPLOY_HOOK_URL
    ```
    Paste the backend deploy hook URL as the value.
-5. In Render, open the **attendit-web** service and copy its deploy hook URL.
+5. In Render, open the **frontend** service and copy its deploy hook URL.
 6. Add another GitHub Actions repository secret:
    ```txt
    RENDER_WEB_DEPLOY_HOOK_URL
@@ -127,7 +127,7 @@ environment variables. Do not put those values inside the GitHub workflow.
 | Setting | Value |
 |---|---|
 | Environment | Node |
-| Root Directory | `attendit-backend` |
+| Root Directory | `backend` |
 | Build Command | `npm install` |
 | Start Command | `npm start` |
 | Health Check Path | `/api/health` |
@@ -136,7 +136,7 @@ environment variables. Do not put those values inside the GitHub workflow.
 **Frontend (Static Site)**
 | Setting | Value |
 |---|---|
-| Root Directory | `attend_it-web` |
+| Root Directory | `frontend` |
 | Build Command | `npm install && npm run build` |
 | Publish Directory | `dist` |
 | Env Vars | `VITE_API_URL=https://<your-backend>.onrender.com/api` |
@@ -164,8 +164,8 @@ Your local `.env` files are gitignored. Production env vars live in Render. Noth
 
 ```bash
 # Terminal 1
-cd attendit-backend && npm run dev
+cd backend && npm run dev
 
 # Terminal 2
-cd attend_it-web && npm run dev
+cd frontend && npm run dev
 ```

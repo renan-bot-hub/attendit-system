@@ -28,23 +28,23 @@ jobs:
           node-version: 22
 
       - name: Install backend dependencies
-        working-directory: attendit-backend
+        working-directory: backend
         run: npm ci
 
       - name: Run backend tests
-        working-directory: attendit-backend
+        working-directory: backend
         run: npm test
 
       - name: Install web dependencies
-        working-directory: attend_it-web
+        working-directory: frontend
         run: npm ci
 
       - name: Lint web
-        working-directory: attend_it-web
+        working-directory: frontend
         run: npm run lint
 
       - name: Build web
-        working-directory: attend_it-web
+        working-directory: frontend
         run: npm run build
 
   deploy:
