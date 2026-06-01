@@ -12,9 +12,7 @@ import { attendService } from '../../services/attendService';
 import { caseService } from '../../services/caseService';
 import { useSchool } from '../../context/useSchool';
 
-// Administrator Hub — manuscript Fig. 20.
-// Adds: school-wide attendance trend chart, case distribution by risk level,
-// and a system-health panel (API status, total records, server time).
+// Administrator Hub
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { settings } = useSchool();
@@ -78,7 +76,7 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Administrator Hub</h1>
           <p className="text-slate-500 mt-2">{settings.schoolName} • {settings.schoolType} • AY {settings.academicYear}</p>
         </div>
-        <button onClick={() => navigate('/users')} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm">
+        <button onClick={() => navigate('/users')} className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm">
           <Users className="w-4 h-4" /> Manage Users
         </button>
       </div>
@@ -87,14 +85,14 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <KPI label="Students" value={loading ? '—' : counts.students} icon={<GraduationCap className="w-4 h-4" />} accent="text-emerald-600" />
-        <KPI label="Teachers" value={loading ? '—' : counts.teachers} icon={<Users className="w-4 h-4" />} accent="text-blue-600" />
+        <KPI label="Teachers" value={loading ? '—' : counts.teachers} icon={<Users className="w-4 h-4" />} accent="text-brand-600" />
         <KPI label="Staff (POD)" value={loading ? '—' : counts.staff} icon={<ShieldCheck className="w-4 h-4" />} accent="text-rose-600" />
         <KPI label="Admins" value={loading ? '—' : counts.admins} icon={<ShieldCheck className="w-4 h-4" />} accent="text-amber-600" />
         <KPI label="Inactive" value={loading ? '—' : counts.inactive} icon={<Users className="w-4 h-4" />} accent="text-slate-500" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Big label="Overall Attendance Rate" value={loading ? '—' : `${summary.overallRate || 0}%`} accent="text-blue-600" icon={<TrendingUp className="w-6 h-6" />} />
+        <Big label="Overall Attendance Rate" value={loading ? '—' : `${summary.overallRate || 0}%`} accent="text-brand-600" icon={<TrendingUp className="w-6 h-6" />} />
         <Big label="At Risk"        value={loading ? '—' : criticalRisk + highRisk} sub={`${criticalRisk} Critical • ${highRisk} High`} accent="text-red-600" icon={<AlertTriangle className="w-6 h-6" />} />
         <Big label="Cases (Open + Escalated)" value={loading ? '—' : openCases + escalated} sub={`${escalated} escalated`} accent="text-amber-600" icon={<FileText className="w-6 h-6" />} />
       </div>
@@ -103,7 +101,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-slate-800 text-lg">School-wide Attendance Trend</h2>
-            <TrendingUp className="w-5 h-5 text-blue-500" />
+            <TrendingUp className="w-5 h-5 text-brand-500" />
           </div>
           <TrendChart trend={trend} loading={loading} />
         </div>
@@ -138,7 +136,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
             <h2 className="font-bold text-slate-800 text-lg">Top At-Risk Students</h2>
-            <button onClick={() => navigate('/analytics')} className="text-blue-600 text-sm font-bold hover:underline">Full Analytics →</button>
+            <button onClick={() => navigate('/analytics')} className="text-brand-600 text-sm font-bold hover:underline">Full Analytics →</button>
           </div>
           <div className="divide-y divide-slate-100">
             {loading && <p className="p-6 text-slate-400 text-sm text-center">Loading…</p>}
@@ -229,12 +227,12 @@ function TrendChart({ trend, loading }) {
           <text x={2} y={y + 3} fontSize="10" fill="#94a3b8">{g}</text>
         </g>;
       })}
-      <polyline fill="none" stroke="#3b82f6" strokeWidth="2" points={points} />
+      <polyline fill="none" stroke="#9B0D2E" strokeWidth="2" points={points} />
       {trend.map((t, i) => {
         const x = pad + i * dx;
         const y = pad + (H - pad * 2) * (1 - (t.rate || 0) / 100);
         return <g key={i}>
-          <circle cx={x} cy={y} r="3" fill="#3b82f6" />
+          <circle cx={x} cy={y} r="3" fill="#9B0D2E" />
           {i === 0 || i === trend.length - 1 ? (
             <text x={x} y={H - 4} fontSize="9" fill="#94a3b8" textAnchor="middle">
               {new Date(t.date).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}

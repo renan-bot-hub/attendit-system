@@ -213,7 +213,7 @@ export default function UserManagement() {
     if (r === 'teacher') return 'bg-purple-100 text-purple-700';
     if (r === 'admin')   return 'bg-amber-100 text-amber-700';
     if (r === 'staff')   return 'bg-rose-100 text-rose-700';
-    return 'bg-blue-100 text-blue-700';
+    return 'bg-brand-100 text-brand-700';
   };
 
   // Show section/grade for students, department for staff
@@ -247,7 +247,7 @@ export default function UserManagement() {
           </button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center transition-colors shadow-sm"
+            className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5 mr-2" /> Add New User
           </button>
@@ -255,12 +255,12 @@ export default function UserManagement() {
       </div>
 
       {importResult && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-          <p className="font-bold text-blue-900 mb-1">
+        <div className="mb-4 p-4 bg-brand-50 border border-brand-200 rounded-lg text-sm">
+          <p className="font-bold text-brand-900 mb-1">
             Import: {importResult.created} created, {importResult.skipped} skipped
           </p>
           {importResult.errors?.length > 0 && (
-            <details className="text-xs text-blue-800 mt-1">
+            <details className="text-xs text-brand-800 mt-1">
               <summary className="cursor-pointer font-bold">View skipped rows ({importResult.errors.length})</summary>
               <ul className="mt-2 list-disc pl-5 space-y-1">
                 {importResult.errors.slice(0, 30).map((e, i) => (
@@ -289,13 +289,13 @@ export default function UserManagement() {
               placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
             />
           </div>
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-slate-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-slate-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="All Roles">All Roles</option>
             <option value="admin">Admin</option>
@@ -345,7 +345,7 @@ export default function UserManagement() {
                   <div className="col-span-3 flex justify-end gap-3 text-sm font-bold">
                     <button
                       onClick={() => handleEditClick(user)}
-                      className="text-blue-600 hover:text-blue-800 transition-colors flex items-center"
+                      className="text-brand-600 hover:text-brand-800 transition-colors flex items-center"
                     >
                       <Edit className="w-4 h-4 mr-1" /> Edit
                     </button>
@@ -452,7 +452,7 @@ export default function UserManagement() {
                   Cancel
                 </button>
                 <button type="submit" disabled={submitting}
-                  className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 flex items-center shadow-sm">
+                  className="px-6 py-2 bg-brand-600 text-white font-bold rounded-lg text-sm hover:bg-brand-700 disabled:opacity-60 flex items-center shadow-sm">
                   <Save className="w-4 h-4 mr-2" /> {submitting ? 'Creating...' : 'Create User'}
                 </button>
               </div>
@@ -533,7 +533,7 @@ export default function UserManagement() {
                   Cancel
                 </button>
                 <button type="submit" disabled={submitting}
-                  className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 flex items-center shadow-sm">
+                  className="px-6 py-2 bg-brand-600 text-white font-bold rounded-lg text-sm hover:bg-brand-700 disabled:opacity-60 flex items-center shadow-sm">
                   <Save className="w-4 h-4 mr-2" /> {submitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -542,7 +542,7 @@ export default function UserManagement() {
         </div>
       )}
 
-      <style>{`.um-input{width:100%;border:1px solid #e2e8f0;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem;outline:none;background:#fff}.um-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.um-input{width:100%;border:1px solid #e2e8f0;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem;outline:none;background:#fff}.um-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }

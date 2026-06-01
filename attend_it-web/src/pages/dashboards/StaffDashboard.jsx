@@ -66,7 +66,7 @@ export default function StaffDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Tile label="Critical Cases" value={loading ? '—' : summary.escalated} icon={<ShieldAlert className="w-5 h-5" />} accent="text-red-600"
           onClick={() => navigate('/critical-cases')} />
-        <Tile label="Pending Conferences" value={loading ? '—' : conferences.length} icon={<CalendarDays className="w-5 h-5" />} accent="text-blue-600"
+        <Tile label="Pending Conferences" value={loading ? '—' : conferences.length} icon={<CalendarDays className="w-5 h-5" />} accent="text-brand-600"
           onClick={() => navigate('/conferences')} />
         <Tile label="Awaiting Documents" value={loading ? '—' : docs.pending} icon={<FolderCheck className="w-5 h-5" />} accent="text-amber-600"
           onClick={() => navigate('/documents')} />
@@ -80,7 +80,7 @@ export default function StaffDashboard() {
               <h2 className="font-bold text-slate-800 text-lg">Critical Cases Queue</h2>
               <p className="text-xs text-slate-500">Cases escalated to your office</p>
             </div>
-            <button onClick={() => navigate('/critical-cases')} className="text-blue-600 text-sm font-bold hover:underline">View all →</button>
+            <button onClick={() => navigate('/critical-cases')} className="text-brand-600 text-sm font-bold hover:underline">View all →</button>
           </div>
           <div className="divide-y divide-slate-100">
             {loading && <p className="p-6 text-center text-slate-500 text-sm">Loading…</p>}
@@ -103,7 +103,7 @@ export default function StaffDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
             <h2 className="font-bold text-slate-800 text-lg">Upcoming Conferences</h2>
-            <button onClick={() => navigate('/conferences')} className="text-blue-600 text-xs font-bold hover:underline">Manage</button>
+            <button onClick={() => navigate('/conferences')} className="text-brand-600 text-xs font-bold hover:underline">Manage</button>
           </div>
           <div className="divide-y divide-slate-100">
             {loading && <p className="p-6 text-center text-slate-500 text-sm">Loading…</p>}
@@ -137,7 +137,7 @@ function Tile({ label, value, icon, accent, onClick }) {
   const Wrapper = onClick ? 'button' : 'div';
   return (
     <Wrapper onClick={onClick}
-      className={`bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-left transition-all ${onClick ? 'hover:border-blue-400 hover:shadow' : ''}`}>
+      className={`bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-left transition-all ${onClick ? 'hover:border-brand-400 hover:shadow' : ''}`}>
       <div className="flex justify-between items-start mb-2">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</p>
         <span className={accent}>{icon}</span>

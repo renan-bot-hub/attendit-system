@@ -1,7 +1,7 @@
+// 404 page shown when the user opens a route that does not exist.
 import { Link } from 'react-router-dom';
 import { Compass } from 'lucide-react';
 
-// 404 page shown when no route matches
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -11,7 +11,7 @@ export default function NotFound() {
         <p className="text-slate-500 mb-6">The page you're looking for doesn't exist.</p>
         <Link
           to="/login"
-          className="inline-block px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm"
+          className="inline-block px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm"
         >
           Back to Sign In
         </Link>

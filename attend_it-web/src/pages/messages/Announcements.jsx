@@ -69,12 +69,12 @@ export default function Announcements() {
       <div className="mb-6 flex justify-between items-end flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Megaphone className="w-7 h-7 text-blue-500" /> Announcements
+            <Megaphone className="w-7 h-7 text-brand-500" /> Announcements
           </h1>
           <p className="text-slate-500 mt-2">School-wide notices.</p>
         </div>
         {canPost && (
-          <button onClick={() => setShowNew(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
+          <button onClick={() => setShowNew(true)} className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
             <Plus className="w-4 h-4 mr-1" /> New Announcement
           </button>
         )}
@@ -108,7 +108,7 @@ export default function Announcements() {
               {a.targetSections?.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {a.targetSections.map((s) => (
-                    <span key={s} className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-1 rounded">{s}</span>
+                    <span key={s} className="text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 px-2 py-1 rounded">{s}</span>
                   ))}
                 </div>
               )}
@@ -140,7 +140,7 @@ export default function Announcements() {
               </Field>
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button type="button" onClick={() => setShowNew(false)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button type="submit" disabled={submitting} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm disabled:opacity-60">
+                <button type="submit" disabled={submitting} className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm disabled:opacity-60">
                   {submitting ? 'Posting…' : 'Publish'}
                 </button>
               </div>
@@ -149,7 +149,7 @@ export default function Announcements() {
         </div>
       )}
 
-      <style>{`.ann-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.ann-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.ann-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.ann-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }

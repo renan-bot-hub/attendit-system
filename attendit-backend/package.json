@@ -5,12 +5,21 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "check:db": "node checkDb.js",
+    "db:merge:dry": "node scripts/mergeMongoDatabases.js --dry-run",
+    "db:merge": "node scripts/mergeMongoDatabases.js --apply",
+    "mobile:import:dry": "node scripts/importMobileExport.js --dry-run",
+    "mobile:import": "node scripts/importMobileExport.js --apply",
+    "ml:train": "node ml/train.js",
+    "ml:train:demo": "node ml/train.js --source synthetic",
+    "ml:smoke": "node ml/smokeTest.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Attend IT backend — Express + Mongoose attendance system API",
+  "description": "Attend IT backend - Express + Mongoose attendance system API",
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
     "bcryptjs": "^3.0.3",

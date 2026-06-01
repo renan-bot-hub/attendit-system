@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 
 exports.getSessions = async (req, res) => {
   try {
-    const filter = req.user.role === 'admin' ? {} : { teacherId: req.user.id };
+    const filter = ['admin', 'staff'].includes(req.user.role) ? {} : { teacherId: req.user.id };
     const sessions = await Session.find(filter)
       .populate('teacherId', 'name email')
       .sort({ date: -1 });

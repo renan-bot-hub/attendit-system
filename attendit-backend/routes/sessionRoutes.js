@@ -8,10 +8,17 @@ const {
   deleteSession,
 } = require('../controllers/sessionController');
 const auth = require('../middleware/authMiddleware');
+const { requireRoles } = require('../middleware/roleMiddleware');
+const { validateBody, validateObjectIdParam } = require('../middleware/validateRequest');
 
 router.get('/',             auth, getSessions);
-router.post('/',            auth, createSession);
-router.patch('/:id/toggle', auth, toggleSession);
-router.delete('/:id',       auth, deleteSession);
+router.post('/',            auth, requireRoles('admin', 'teacher'), validateBody({
+  className: { type: 'string', required: true, maxLength: 120 },
+  section: { type: 'string', required: true, maxLength: 120 },
+  subject: { type: 'string', maxLength: 120 },
+  date: { type: 'date' },
+}), createSession);
+router.patch('/:id/toggle', auth, requireRoles('admin', 'teacher'), validateObjectIdParam('id'), toggleSession);
+router.delete('/:id',       auth, requireRoles('admin', 'teacher'), validateObjectIdParam('id'), deleteSession);
 
 module.exports = router;

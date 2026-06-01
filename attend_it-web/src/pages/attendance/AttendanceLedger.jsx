@@ -62,8 +62,8 @@ export default function AttendanceLedger() {
   }[s] || 'bg-slate-100 text-slate-700');
 
   const markedStyle = (m) => ({
-    Scan:   'bg-violet-100 text-violet-700',
-    Manual: 'bg-blue-100 text-blue-700',
+    Scan:   'bg-brand-100 text-brand-700',
+    Manual: 'bg-brand-100 text-brand-700',
     Auto:   'bg-slate-100 text-slate-600',
   }[m] || 'bg-slate-100 text-slate-600');
 
@@ -115,25 +115,25 @@ export default function AttendanceLedger() {
               placeholder="Search student or date…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
             />
           </div>
           <div className="flex items-center gap-1 text-xs text-slate-400 font-bold uppercase tracking-wider">
             <Filter className="w-3 h-3" /> Filters
           </div>
           <select value={statusFilter} onChange={(e) => setStatus(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="All">All Status</option>
             <option>Present</option>
             <option>Late</option>
             <option>Absent</option>
           </select>
           <select value={sectionFilter} onChange={(e) => setSection(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
             {sections.map((s) => <option key={s}>{s}</option>)}
           </select>
           <select value={markedByFilter} onChange={(e) => setMarkedBy(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="All">All Sources</option>
             <option>Scan</option>
             <option>Manual</option>
@@ -173,7 +173,7 @@ export default function AttendanceLedger() {
                   </div>
                   <div className="col-span-2 text-right flex justify-end gap-3">
                     <button onClick={() => openCorrectionModal(entry)}
-                      className="text-blue-600 font-bold text-sm hover:text-blue-800 inline-flex items-center">
+                      className="text-brand-600 font-bold text-sm hover:text-brand-800 inline-flex items-center">
                       <Edit2 className="w-3 h-3 mr-1.5" /> Correct
                     </button>
                     {isAdmin && (
@@ -208,7 +208,7 @@ export default function AttendanceLedger() {
                 <div className="flex gap-2">
                   {['Present', 'Late', 'Absent'].map((status) => (
                     <button key={status} onClick={() => setNewStatus(status)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-bold border ${newStatus === status ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                      className={`flex-1 py-2 rounded-lg text-sm font-bold border ${newStatus === status ? 'bg-brand-50 border-brand-500 text-brand-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                       {status}
                     </button>
                   ))}
@@ -217,7 +217,7 @@ export default function AttendanceLedger() {
             </div>
             <div className="flex gap-3 justify-end mt-6">
               <button onClick={() => setEditing(null)} className="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-              <button onClick={handleSaveCorrection} disabled={saving} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 flex items-center shadow-sm">
+              <button onClick={handleSaveCorrection} disabled={saving} className="px-4 py-2 bg-brand-600 text-white font-bold rounded-lg text-sm hover:bg-brand-700 disabled:opacity-60 flex items-center shadow-sm">
                 <Check className="w-4 h-4 mr-1.5" /> {saving ? 'Saving…' : 'Save Correction'}
               </button>
             </div>

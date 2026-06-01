@@ -16,6 +16,13 @@ const aiAlertSchema = new mongoose.Schema({
   riskScore:     { type: Number, default: 0, min: 0, max: 100 },
   riskLevel:     { type: String, enum: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'], default: 'Medium Risk' },
   recommendations: [{ type: String }],
+  scorer:         { type: String, enum: ['model', 'rules'], default: 'rules' },
+  modelVersion:   { type: String, default: '' },
+  modelProbabilities: {
+    type: Map,
+    of: Number,
+    default: undefined,
+  },
   status:        { type: String, enum: ['New', 'Under Review', 'Actioned', 'Dismissed'], default: 'New' },
   flaggedOn:     { type: Date, default: Date.now },
   reviewedBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

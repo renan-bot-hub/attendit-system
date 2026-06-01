@@ -1,16 +1,34 @@
+/* Global Tailwind theme, base styles, and reusable application utilities. */
 @import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fff5f7;
+  --color-brand-100: #fbe6ec;
+  --color-brand-200: #f3c6d1;
+  --color-brand-300: #e99caf;
+  --color-brand-400: #d85e7a;
+  --color-brand-500: #b0183a;
+  --color-brand-600: #9b0d2e;
+  --color-brand-700: #7d0a25;
+  --color-brand-800: #5d091d;
+  --color-brand-900: #3a0712;
+}
 
 @layer base {
   :root {
-    --app-bg: #f5f7fa;
+    --app-bg: #f8f6f4;
     --app-surface: #ffffff;
-    --app-surface-muted: #f8fafc;
-    --app-border: #d8e0ea;
-    --app-border-strong: #cbd5e1;
-    --app-text: #172033;
-    --app-muted: #667085;
-    --app-brand: #1d4ed8;
-    --app-brand-strong: #1e40af;
+    --app-surface-muted: #fbfaf8;
+    --app-border: #e5e0dc;
+    --app-border-strong: #d5cbc4;
+    --app-text: #1f1f1f;
+    --app-muted: #6f6762;
+    --app-brand: #9B0D2E;
+    --app-brand-strong: #7D0A25;
+    --app-brand-soft: #fff5f7;
+    --app-ink: #1f1f1f;
+    --app-sidebar: #2a0a12;
+    --app-sidebar-strong: #18070b;
     --app-danger: #b42318;
     --app-warning: #b54708;
     --app-success: #027a48;
@@ -28,7 +46,7 @@
     margin: 0;
     color: var(--app-text);
     background:
-      linear-gradient(180deg, #f8fafc 0, var(--app-bg) 260px);
+      linear-gradient(180deg, #fff 0, var(--app-bg) 320px);
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -64,7 +82,7 @@
 
   thead th {
     background: var(--app-surface-muted);
-    color: #475467;
+    color: #5f5752;
     font-size: 0.74rem;
     font-weight: 700;
     letter-spacing: 0;
@@ -73,8 +91,8 @@
   }
 
   tbody td {
-    border-bottom: 1px solid #edf1f6;
-    color: #27364b;
+    border-bottom: 1px solid #eee9e5;
+    color: #2f2b29;
   }
 
   tbody tr:last-child td {
@@ -82,7 +100,7 @@
   }
 
   tbody tr:hover {
-    background: #fafcff;
+    background: #fff9fa;
   }
 
   input:not([type="checkbox"]):not([type="radio"]),
@@ -100,24 +118,26 @@
   input:not([type="checkbox"]):not([type="radio"]):focus,
   select:focus,
   textarea:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    border-color: #9B0D2E;
+    box-shadow: 0 0 0 3px rgba(155, 13, 46, 0.14);
   }
 
   label {
-    color: #475467;
+    color: #5f5752;
     letter-spacing: 0;
   }
 
   ::selection {
-    background: #bfdbfe;
-    color: #0f172a;
+    background: #f3c6d1;
+    color: #1f1f1f;
   }
 }
 
 @layer components {
   .app-shell {
-    background: var(--app-bg);
+    background:
+      radial-gradient(circle at top right, rgba(155, 13, 46, 0.06), transparent 28rem),
+      linear-gradient(180deg, #fff 0, var(--app-bg) 26rem);
   }
 
   .app-content {
@@ -137,8 +157,73 @@
   }
 
   .auth-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    border-color: #9B0D2E;
+    box-shadow: 0 0 0 3px rgba(155, 13, 46, 0.14);
+  }
+
+  .auth-page {
+    background:
+      linear-gradient(180deg, #5d091d 0%, #7d0a25 48%, #3a0712 100%);
+  }
+
+  .auth-brand-panel {
+    position: relative;
+    isolation: isolate;
+    background:
+      repeating-radial-gradient(circle at 74% 28%, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 12px),
+      linear-gradient(160deg, #3a0712 0%, #5d091d 48%, #1f1f1f 100%);
+  }
+
+  .auth-brand-panel::after,
+  .auth-card::before,
+  .sidebar-shell::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    color: rgba(255, 255, 255, 0.12);
+  }
+
+  .auth-brand-panel::after {
+    width: 27rem;
+    height: 27rem;
+    right: -9rem;
+    bottom: 6rem;
+    box-shadow:
+      inset 0 0 0 2.4rem rgba(255, 255, 255, 0.035),
+      inset 0 0 0 4.8rem rgba(255, 255, 255, 0.028),
+      inset 0 0 0 7rem rgba(255, 255, 255, 0.02);
+    z-index: -1;
+  }
+
+  .auth-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-card::before {
+    display: none;
+  }
+
+  .sidebar-shell {
+    position: relative;
+    isolation: isolate;
+    background:
+      repeating-radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 11px),
+      linear-gradient(180deg, var(--app-sidebar) 0%, var(--app-sidebar-strong) 100%);
+  }
+
+  .sidebar-shell::after {
+    width: 13rem;
+    height: 13rem;
+    left: -7rem;
+    bottom: 5rem;
+    color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      inset 0 0 0 1.4rem rgba(255, 255, 255, 0.028),
+      inset 0 0 0 2.8rem rgba(255, 255, 255, 0.02);
+    z-index: -1;
   }
 }
 
@@ -153,16 +238,16 @@ body {
 }
 
 .shadow-sm {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 1px 2px rgba(31, 31, 31, 0.045) !important;
 }
 
 .shadow-md {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 18px rgba(31, 31, 31, 0.08) !important;
 }
 
 .shadow-xl,
 .shadow-2xl {
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 18px 42px rgba(31, 31, 31, 0.14) !important;
 }
 
 .font-black {
@@ -192,19 +277,65 @@ body {
 
 .bg-gradient-to-br {
   background-image: none !important;
-  background-color: #172033 !important;
+  background-color: var(--app-sidebar) !important;
 }
 
-.bg-violet-600 {
+.bg-brand-600 {
   background-color: var(--app-brand) !important;
 }
 
-.hover\:bg-violet-700:hover {
+.hover\:bg-brand-700:hover {
   background-color: var(--app-brand-strong) !important;
 }
 
+.bg-slate-900,
+.hover\:bg-slate-800:hover {
+  background-color: var(--app-ink) !important;
+}
+
+.bg-slate-100 {
+  background-color: var(--app-bg) !important;
+}
+
+.bg-slate-50 {
+  background-color: var(--app-surface-muted) !important;
+}
+
+.border-slate-200 {
+  border-color: var(--app-border) !important;
+}
+
+.border-slate-300 {
+  border-color: var(--app-border-strong) !important;
+}
+
+.text-brand-600,
+.hover\:text-brand-800:hover {
+  color: var(--app-brand) !important;
+}
+
+.text-brand-500 {
+  color: var(--app-brand-500, #b0183a) !important;
+}
+
+.bg-brand-50,
+.bg-brand-50\/50 {
+  background-color: rgba(255, 245, 247, 0.92) !important;
+}
+
+.border-brand-500 {
+  border-color: var(--app-brand) !important;
+}
+
+.ring-brand-100,
 .ring-2 {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(155, 13, 46, 0.12) !important;
+}
+
+.focus\:ring-brand-500:focus,
+.focus\:border-brand-500:focus {
+  border-color: var(--app-brand) !important;
+  box-shadow: 0 0 0 3px rgba(155, 13, 46, 0.14) !important;
 }
 
 @media (max-width: 768px) {

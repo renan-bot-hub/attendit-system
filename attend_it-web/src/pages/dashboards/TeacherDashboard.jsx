@@ -85,7 +85,7 @@ export default function TeacherDashboard() {
             {me?.department || 'Faculty'} • {settings.schoolName} • AY {settings.academicYear}
           </p>
         </div>
-        <button onClick={() => navigate('/attendance')} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm">
+        <button onClick={() => navigate('/attendance')} className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm">
           <ClipboardCheck className="w-4 h-4" /> Take Attendance
         </button>
       </div>
@@ -94,7 +94,7 @@ export default function TeacherDashboard() {
 
       {/* Headline tiles */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
-        <Tile label="My Sessions"        value={loading ? '—' : sessions.length} icon={<BookOpen className="w-4 h-4" />} accent="text-blue-600" />
+        <Tile label="My Sessions"        value={loading ? '—' : sessions.length} icon={<BookOpen className="w-4 h-4" />} accent="text-brand-600" />
         <Tile label="Total Students"     value={loading ? '—' : summary.totalStudents || 0} icon={<Users className="w-4 h-4" />} accent="text-emerald-600" />
         <Tile label="Overall Rate"       value={loading ? '—' : `${summary.overallRate || 0}%`} icon={<FileBarChart className="w-4 h-4" />} accent="text-amber-600" />
         <Tile label="Critical (rate)"    value={loading ? '—' : counts.critical} icon={<AlertCircle className="w-4 h-4" />} accent="text-red-600" />
@@ -109,7 +109,7 @@ export default function TeacherDashboard() {
               <h2 className="font-bold text-slate-800 text-lg">Weekly Attendance Trend</h2>
               <p className="text-xs text-slate-500">Last 14 days, all teachers combined</p>
             </div>
-            <TrendingUp className="w-5 h-5 text-blue-500" />
+            <TrendingUp className="w-5 h-5 text-brand-500" />
           </div>
           <TrendChart trend={trend} loading={loading} />
         </div>
@@ -157,8 +157,8 @@ export default function TeacherDashboard() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2"><FolderCheck className="w-4 h-4 text-blue-500" /> Recent Parent Submissions</h2>
-            <button onClick={() => navigate('/documents')} className="text-blue-600 text-xs font-bold hover:underline">View</button>
+            <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2"><FolderCheck className="w-4 h-4 text-brand-500" /> Recent Parent Submissions</h2>
+            <button onClick={() => navigate('/documents')} className="text-brand-600 text-xs font-bold hover:underline">View</button>
           </div>
           {loading ? <p className="p-6 text-center text-slate-400 text-sm">Loading…</p>
           : docs.length === 0 ? <p className="p-6 text-center text-slate-400 text-sm">No pending submissions.</p>
@@ -212,11 +212,11 @@ function TrendChart({ trend, loading }) {
           <text x={2} y={y + 3} fontSize="9" fill="#94a3b8">{g}</text>
         </g>;
       })}
-      <polyline fill="none" stroke="#3b82f6" strokeWidth="2" points={points} />
+      <polyline fill="none" stroke="#9B0D2E" strokeWidth="2" points={points} />
       {trend.map((t, i) => {
         const x = pad + i * dx;
         const y = pad + (H - pad * 2) * (1 - (t.rate || 0) / maxRate);
-        return <circle key={i} cx={x} cy={y} r="2.5" fill="#3b82f6" />;
+        return <circle key={i} cx={x} cy={y} r="2.5" fill="#9B0D2E" />;
       })}
     </svg>
   );

@@ -14,11 +14,11 @@ export default function AtRiskCard({ student, onApprove }) {
         </div>
       </div>
       
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg mb-4 text-sm italic text-blue-900">
+      <div className="bg-brand-50 border border-brand-100 p-4 rounded-lg mb-4 text-sm italic text-brand-900">
         <strong>AI Action:</strong> "{student.recommendation}"
       </div>
 
-      <button onClick={() => onApprove(student.id)} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg transition">
+      <button onClick={() => onApprove(student.id)} className="w-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-2 rounded-lg transition">
         Approve Intervention
       </button>
     </div>

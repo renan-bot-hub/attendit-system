@@ -90,7 +90,7 @@ export default function AIAlerts() {
       <div className="mb-8 flex flex-wrap gap-4 justify-between items-end">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldAlert className="w-7 h-7 text-blue-600" /> AI Alerts & Recommendations
+            <ShieldAlert className="w-7 h-7 text-brand-600" /> AI Alerts & Recommendations
           </h1>
           <p className="text-slate-500 mt-2">
             Pattern-detected attendance risks with prescriptive next-step recommendations.
@@ -99,7 +99,7 @@ export default function AIAlerts() {
         <button
           onClick={runAnalysis}
           disabled={running}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-sm"
+          className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-sm"
         >
           <RefreshCw className={`w-4 h-4 ${running ? 'animate-spin' : ''}`} />
           {running ? 'Running…' : 'Run Pattern Analysis'}
@@ -155,7 +155,7 @@ export default function AIAlerts() {
                   <ul className="space-y-1.5 text-sm text-slate-700">
                     {a.recommendations.map((r, i) => (
                       <li key={i} className="flex gap-2">
-                        <ArrowUpRight className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                        <ArrowUpRight className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
                         <span>{r}</span>
                       </li>
                     ))}
@@ -165,7 +165,7 @@ export default function AIAlerts() {
 
               <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
                 <span className={`text-[11px] font-semibold px-2 py-1 rounded ${
-                  a.status === 'New' ? 'bg-blue-50 text-blue-700' :
+                  a.status === 'New' ? 'bg-brand-50 text-brand-700' :
                   a.status === 'Under Review' ? 'bg-amber-50 text-amber-700' :
                   a.status === 'Actioned' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
                 }`}>{a.status}</span>

@@ -1,14 +1,13 @@
-// Login screen. Two-pane layout with school branding; routes the user
-// to /admin, /staff, or /teacher based on their role after a successful
-// login.
+// Login screen. Routes the user to /admin, /staff, or /teacher based on
+// their role after a successful login.
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Lock, Mail } from 'lucide-react';
+import SchoolMark from '../../components/branding/SchoolMark';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
 
-// Two-pane login screen with school branding
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +16,6 @@ export default function Login() {
   const navigate = useNavigate();
   const { settings } = useSchool();
 
-  // Authenticate then route to the user's dashboard based on role
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -25,7 +23,7 @@ export default function Login() {
 
     try {
       const data = await authService.login({ email, password });
-      if (data.user.role === 'admin')      navigate('/admin');
+      if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'staff') navigate('/staff');
       else if (data.user.role === 'teacher') navigate('/teacher');
       else {
@@ -40,50 +38,20 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-100">
-      {/* Left: brand panel */}
-      <div className="hidden md:flex md:w-[42%] bg-[#172033] text-white p-10 flex-col justify-between border-r border-slate-800">
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <GraduationCap className="w-8 h-8 text-blue-300" />
-            <h1 className="text-xl font-semibold">{settings.schoolName}</h1>
-          </div>
-          <p className="text-slate-400 text-sm font-medium">
-            {settings.schoolType} school • AY {settings.academicYear}
+    <div className="auth-page min-h-screen flex items-center justify-center px-5 py-8">
+      <main className="w-full max-w-[26rem]">
+        <section className="text-center text-white mb-6">
+          <SchoolMark className="w-24 h-24 mx-auto mb-4 drop-shadow-md" />
+          <h1 className="text-2xl font-semibold leading-tight">
+            {settings.schoolName}
+          </h1>
+          <p className="text-sm font-bold tracking-wider mt-2">MANILA</p>
+          <p className="text-sm font-medium text-white/80 mt-1">
+            AY {settings.academicYear}
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2 className="text-2xl font-semibold mb-4 leading-snug">
-            Attendance operations for the school day.
-          </h2>
-          <p className="text-slate-300 max-w-md leading-7 text-sm">
-            Track attendance, communicate with parents, manage cases, and get prescriptive
-            insights — all in one secure dashboard for administrators, teachers, and students.
-          </p>
-        </div>
-
-        <p className="text-xs text-slate-500">
-          © {new Date().getFullYear()} {settings.schoolName}. Powered by Attend IT.
-        </p>
-      </div>
-
-      {/* Right: form */}
-      <div className="flex-1 flex items-center justify-center p-5 md:p-8">
-        <div className="w-full max-w-md">
-          <div className="md:hidden text-center mb-8">
-            <GraduationCap className="w-10 h-10 text-blue-600 mx-auto mb-2" />
-            <h1 className="text-xl font-semibold text-slate-900">{settings.schoolName}</h1>
-            <p className="text-slate-500 text-xs font-medium mt-1">
-              {settings.schoolType} • AY {settings.academicYear}
-            </p>
-          </div>
-
-          <div className="mb-7">
-            <h2 className="text-2xl font-semibold text-slate-900">Sign in</h2>
-            <p className="text-slate-500 mt-2 text-sm">Use your school account to continue.</p>
-          </div>
-
+        <section className="w-full bg-white border border-white/70 rounded-xl shadow-xl px-6 py-7 md:px-8 md:py-8">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
               {error}
@@ -93,17 +61,17 @@ export default function Login() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-2">
-                Email Address
+                Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-brand-500" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@school.edu"
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg outline-none text-sm"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg outline-none text-sm focus:border-brand-500 focus:ring-brand-500"
                 />
               </div>
             </div>
@@ -113,14 +81,14 @@ export default function Login() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-brand-500" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg outline-none text-sm"
+                  placeholder="********"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg outline-none text-sm focus:border-brand-500 focus:ring-brand-500"
                 />
               </div>
             </div>
@@ -128,17 +96,20 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-60"
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-60"
             >
-              {loading ? 'Signing in…' : <>Sign In <ArrowRight className="w-4 h-4" /></>}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-600">
-            New here? <Link to="/signup" className="text-blue-600 font-semibold hover:underline">Create an account</Link>
+          <p className="mt-5 text-center text-sm text-slate-600">
+            New here?{' '}
+            <Link to="/signup" className="font-semibold text-brand-600 hover:text-brand-700 hover:underline">
+              Sign Up
+            </Link>
           </p>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

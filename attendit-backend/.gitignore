@@ -1,2 +1,7 @@
 node_modules/
 .env
+ml/private-data/
+ml/training-data*.csv
+ml/training-data*.json
+!ml/training-data.example.csv
+!ml/training-data.example.json

@@ -73,6 +73,7 @@ export default function StudentManagement() {
     _id: null, name: '', email: '', studentId: '', section: '', gradeLevel: '',
     parentName: '', parentEmail: '', parentPhone: '',
   });
+
   const openEditStudent = (s) => setStudentForm({ ...s });
 
   const saveStudent = async (e) => {
@@ -120,6 +121,7 @@ export default function StudentManagement() {
 
   // ---- Section CRUD ---------------------------------------------------------
   const openNewSection = () => setSectionForm({ _id: null, name: '', gradeLevel: '', adviser: '' });
+
   const openEditSection = (sec) => setSectionForm({ ...sec, adviser: sec.adviser?._id || '' });
 
   const saveSection = async (e) => {
@@ -177,7 +179,7 @@ export default function StudentManagement() {
       <div className="mb-6 flex justify-between items-end flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <IdCard className="w-7 h-7 text-blue-500" /> Students & Sections
+            <IdCard className="w-7 h-7 text-brand-500" /> Students & Sections
           </h1>
           <p className="text-slate-500 mt-2">Manage student records, sections, and QR backups.</p>
         </div>
@@ -198,14 +200,14 @@ export default function StudentManagement() {
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name / ID / email…"
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
               <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                 <option>All</option>
                 {sections.map((s) => <option key={s._id}>{s.name}</option>)}
               </select>
-              <button onClick={openNewStudent} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
+              <button onClick={openNewStudent} className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
                 <Plus className="w-4 h-4 mr-1" /> New Student
               </button>
             </div>
@@ -225,10 +227,10 @@ export default function StudentManagement() {
                       {s.parentName ? <>{s.parentName}<br/><span className="text-slate-400">{s.parentEmail || s.parentPhone || ''}</span></> : '—'}
                     </div>
                     <div className="col-span-3 flex justify-end gap-2 flex-wrap">
-                      <button onClick={() => regenerateQr(s)} className="text-xs font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1">
+                      <button onClick={() => regenerateQr(s)} className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
                         <QrCode className="w-3.5 h-3.5" /> QR Backup
                       </button>
-                      <button onClick={() => openEditStudent(s)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                      <button onClick={() => openEditStudent(s)} className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
                         <Edit className="w-3.5 h-3.5" /> Edit
                       </button>
                       <button onClick={() => deleteStudent(s)} className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1">
@@ -251,7 +253,7 @@ export default function StudentManagement() {
               <Layers className="w-4 h-4 text-slate-400" />
               <p className="text-sm font-bold text-slate-600">{sections.length} section{sections.length !== 1 ? 's' : ''}</p>
             </div>
-            <button onClick={openNewSection} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
+            <button onClick={openNewSection} className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
               <Plus className="w-4 h-4 mr-1" /> New Section
             </button>
           </div>
@@ -266,7 +268,7 @@ export default function StudentManagement() {
                   <div className="col-span-3 text-xs text-slate-600">Adviser: {sec.adviser?.name || '—'}</div>
                   <div className="col-span-2 text-xs text-slate-600">{sec.studentCount} students</div>
                   <div className="col-span-2 flex justify-end gap-2">
-                    <button onClick={() => openEditSection(sec)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    <button onClick={() => openEditSection(sec)} className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
                       <Edit className="w-3.5 h-3.5" /> Edit
                     </button>
                     <button onClick={() => deleteSection(sec)} className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1">
@@ -320,7 +322,7 @@ export default function StudentManagement() {
             </div>
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button type="button" onClick={() => setStudentForm(null)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-              <button type="submit" disabled={studentSubmitting} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm disabled:opacity-60">
+              <button type="submit" disabled={studentSubmitting} className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm disabled:opacity-60">
                 {studentSubmitting ? 'Saving…' : studentForm._id ? 'Save' : 'Create'}
               </button>
             </div>
@@ -346,7 +348,7 @@ export default function StudentManagement() {
             </Field>
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button type="button" onClick={() => setSectionForm(null)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-              <button type="submit" disabled={sectionSubmitting} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm disabled:opacity-60">
+              <button type="submit" disabled={sectionSubmitting} className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm disabled:opacity-60">
                 {sectionSubmitting ? 'Saving…' : sectionForm._id ? 'Save' : 'Create'}
               </button>
             </div>
@@ -381,7 +383,7 @@ export default function StudentManagement() {
         </Modal>
       )}
 
-      <style>{`.sm-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.sm-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.sm-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.sm-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }
@@ -390,7 +392,7 @@ function TabBtn({ active, onClick, children }) {
   return (
     <button onClick={onClick}
       className={`px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider ${
-        active ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+        active ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
       }`}>{children}</button>
   );
 }

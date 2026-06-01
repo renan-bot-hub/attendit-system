@@ -3,11 +3,32 @@
 
 const Document = require('../models/Document');
 const User = require('../models/User');
+const { isValidObjectId } = require('../middleware/validateRequest');
+const {
+  findStudentsForParentUser,
+  getAccessibleStudentIds,
+  userCanAccessStudent,
+} = require('../utils/accessControl');
+
+async function buildDocumentFilter(req) {
+  const filter = {};
+  if (req.query.status) filter.status = req.query.status;
+
+  if (req.user.role === 'parent') {
+    const students = await findStudentsForParentUser(req.user.id);
+    filter.student = { $in: students.map((student) => student._id) };
+  } else if (req.user.role === 'teacher') {
+    filter.student = { $in: await getAccessibleStudentIds(req.user) };
+  } else if (!['admin', 'staff'].includes(req.user.role)) {
+    filter.student = { $in: [] };
+  }
+
+  return filter;
+}
 
 exports.list = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.status) filter.status = req.query.status;
+    const filter = await buildDocumentFilter(req);
     const docs = await Document.find(filter)
       .populate('student', 'name email studentId section gradeLevel parentName parentEmail')
       .populate('reviewedBy', 'name role')
@@ -20,12 +41,20 @@ exports.list = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
+    if (!['parent', 'teacher', 'admin', 'staff'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
     const { studentId, documentType, fileName, fileUrl, absenceDate, reason, parentName } = req.body;
     if (!studentId) return res.status(400).json({ message: 'studentId is required' });
+    if (!isValidObjectId(studentId)) return res.status(400).json({ message: 'Invalid studentId' });
 
     const student = await User.findById(studentId);
     if (!student || student.role !== 'student') {
       return res.status(404).json({ message: 'Student not found' });
+    }
+    if (!await userCanAccessStudent(req.user, student)) {
+      return res.status(403).json({ message: 'You can only submit documents for students in your scope.' });
     }
 
     const doc = await Document.create({
@@ -54,17 +83,20 @@ exports.review = async (req, res) => {
     if (!['Accepted', 'Rejected', 'Pending Review'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
-    const doc = await Document.findByIdAndUpdate(
-      req.params.id,
-      {
-        status,
-        reviewNote: reviewNote || '',
-        reviewedBy: status === 'Pending Review' ? null : req.user.id,
-        reviewedAt: status === 'Pending Review' ? null : new Date(),
-      },
-      { new: true }
-    ).populate('student', 'name email studentId section parentName parentEmail');
+    const doc = await Document.findById(req.params.id)
+      .populate('student', 'name email studentId section gradeSection parentName parentEmail');
     if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+    if (!await userCanAccessStudent(req.user, doc.student)) {
+      return res.status(403).json({ message: 'You can only review documents for students in your scope.' });
+    }
+
+    doc.status = status;
+    doc.reviewNote = reviewNote || '';
+    doc.reviewedBy = status === 'Pending Review' ? null : req.user.id;
+    doc.reviewedAt = status === 'Pending Review' ? null : new Date();
+    await doc.save();
+
     res.json(doc);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -86,9 +118,10 @@ exports.remove = async (req, res) => {
 
 exports.summary = async (req, res) => {
   try {
-    const pending  = await Document.countDocuments({ status: 'Pending Review' });
-    const accepted = await Document.countDocuments({ status: 'Accepted' });
-    const rejected = await Document.countDocuments({ status: 'Rejected' });
+    const base = await buildDocumentFilter(req);
+    const pending  = await Document.countDocuments({ ...base, status: 'Pending Review' });
+    const accepted = await Document.countDocuments({ ...base, status: 'Accepted' });
+    const rejected = await Document.countDocuments({ ...base, status: 'Rejected' });
     res.json({ pending, accepted, rejected, total: pending + accepted + rejected });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

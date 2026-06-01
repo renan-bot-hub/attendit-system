@@ -15,7 +15,7 @@ export default function ParentDocuments() {
   const isAdmin = authService.getCurrentUser()?.role === 'admin';
   const [docs, setDocs] = useState([]);
   const [summary, setSummary] = useState({ pending: 0, accepted: 0, rejected: 0, total: 0 });
-  const [tab, setTab] = useState('Pending');     // Pending | Accepted | Rejected | All
+  const [tab, setTab] = useState('All');         // All | Pending | Accepted | Rejected
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [reviewNote, setReviewNote] = useState('');
@@ -91,7 +91,7 @@ export default function ParentDocuments() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <FolderCheck className="w-7 h-7 text-blue-500" /> Parent Documents
+          <FolderCheck className="w-7 h-7 text-brand-500" /> Parent Documents
         </h1>
         <p className="text-slate-500 mt-2">
           Review excuse letters and health certificates submitted by parents from the mobile app.
@@ -115,7 +115,7 @@ export default function ParentDocuments() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by student or type…"
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
         </div>
@@ -143,14 +143,14 @@ export default function ParentDocuments() {
                     </p>
                     {d.reason && <p className="text-sm text-slate-700 mt-1 line-clamp-2">{d.reason}</p>}
                     {d.fileName && (
-                      <button className="mt-2 text-blue-600 text-xs font-bold inline-flex items-center hover:text-blue-800">
+                      <button className="mt-2 text-brand-600 text-xs font-bold inline-flex items-center hover:text-brand-800">
                         <FileDown className="w-3 h-3 mr-1" /> {d.fileName}
                       </button>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 items-end shrink-0">
                     {d.status === 'Pending Review' ? (
-                      <button onClick={() => setSelected(d)} className="text-xs font-bold text-blue-600 hover:text-blue-800">Review</button>
+                      <button onClick={() => setSelected(d)} className="text-xs font-bold text-brand-600 hover:text-brand-800">Review</button>
                     ) : (
                       <p className="text-[10px] text-slate-400">
                         Reviewed {d.reviewedAt ? new Date(d.reviewedAt).toLocaleDateString() : ''}
@@ -193,7 +193,7 @@ export default function ParentDocuments() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Review note (optional)</label>
                 <textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button onClick={() => { review(selected._id, 'Rejected'); setSelected(null); }} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg text-sm flex items-center">
@@ -213,7 +213,7 @@ export default function ParentDocuments() {
 
 function CountTile({ label, value, accent, onClick, active, icon }) {
   return (
-    <button onClick={onClick} className={`bg-white p-4 rounded-2xl border text-left transition-all ${active ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300'}`}>
+    <button onClick={onClick} className={`bg-white p-4 rounded-2xl border text-left transition-all ${active ? 'border-brand-500 ring-2 ring-brand-100' : 'border-slate-200 hover:border-slate-300'}`}>
       <div className="flex justify-between items-start mb-1">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</p>
         {icon && <span className={accent}>{icon}</span>}

@@ -1,19 +1,20 @@
 // User CRUD + self-service profile actions + admin-only QR backup.
-// Web roles: admin / teacher / staff. Students are data-only records.
+// Login roles: admin / teacher / staff / parent. Students are data-only records.
 
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const { buildScopedStudentQuery, normalizeEmail } = require('../utils/accessControl');
 
-const WEB_ROLES   = ['admin', 'teacher', 'staff'];
+const WEB_ROLES   = ['admin', 'teacher', 'staff', 'parent'];
 const DATA_ROLES  = ['student'];
 const ALL_ROLES   = [...WEB_ROLES, ...DATA_ROLES];
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const filter = req.user.role === 'admin' ? {} : { isActive: true };
+    const filter = req.user.role === 'admin' ? {} : await buildScopedStudentQuery(req.user);
     const projection = req.user.role === 'admin'
       ? '-password'
-      : 'name email role department section gradeLevel studentId parentName parentEmail parentPhone qrCode isActive';
+      : 'name email role section gradeLevel gradeSection studentId studentNumber parentName parentEmail parentPhone isActive';
 
     const users = await User.find(filter).select(projection).sort({ createdAt: -1 });
     res.json(users);
@@ -34,7 +35,8 @@ exports.getMe = async (req, res) => {
 
 exports.updateMe = async (req, res) => {
   try {
-    const { name, email, department, section, gradeLevel } = req.body;
+    const { name, department, section, gradeLevel } = req.body;
+    const email = req.body.email ? normalizeEmail(req.body.email) : undefined;
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { name, email, department, section, gradeLevel },
@@ -76,11 +78,13 @@ exports.createUser = async (req, res) => {
   }
   try {
     const {
-      name, email, password, role,
-      studentId, section, gradeLevel, department,
+      name, password, role,
+      studentId, studentNumber, section, gradeLevel, gradeSection, department,
+      teacherNumber, birthdate, contactNumber,
       parentName, parentEmail, parentPhone,
     } = req.body;
 
+    const email = normalizeEmail(req.body.email);
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
@@ -101,13 +105,18 @@ exports.createUser = async (req, res) => {
     const doc = {
       name, email, password: hashed,
       role,
-      studentId: studentId || null,
-      section: section || null,
+      studentId: studentId || studentNumber || null,
+      studentNumber: studentNumber || studentId || null,
+      section: section || gradeSection || null,
       gradeLevel: gradeLevel || null,
+      gradeSection: gradeSection || section || null,
       department: department || null,
+      teacherNumber: teacherNumber || null,
+      birthdate: birthdate || null,
+      contactNumber: contactNumber || parentPhone || null,
       parentName: parentName || null,
       parentEmail: parentEmail || null,
-      parentPhone: parentPhone || null,
+      parentPhone: parentPhone || contactNumber || null,
     };
     if (role === 'student') doc.qrCode = User.generateQrToken();
 
@@ -131,7 +140,8 @@ exports.bulkCreate = async (req, res) => {
   for (let i = 0; i < users.length; i++) {
     const row = users[i];
     try {
-      if (!row.name || !row.email) {
+      const email = normalizeEmail(row.email);
+      if (!row.name || !email) {
         results.errors.push({ row: i + 1, message: 'Missing name or email' });
         results.skipped++;
         continue;
@@ -142,25 +152,36 @@ exports.bulkCreate = async (req, res) => {
         results.skipped++;
         continue;
       }
-      const exists = await User.findOne({ email: row.email });
+      const exists = await User.findOne({ email });
       if (exists) {
-        results.errors.push({ row: i + 1, message: `Email already exists: ${row.email}` });
+        results.errors.push({ row: i + 1, message: `Email already exists: ${email}` });
         results.skipped++;
         continue;
       }
-      const hashed = await bcrypt.hash(row.password || 'changeme123', 10);
+      const isLoginUser = WEB_ROLES.includes(role);
+      if (isLoginUser && (!row.password || row.password.length < 6)) {
+        results.errors.push({ row: i + 1, message: 'Password (min 6) required for login accounts' });
+        results.skipped++;
+        continue;
+      }
+      const hashed = await bcrypt.hash(isLoginUser ? row.password : User.generateQrToken(), 10);
       const doc = {
         name: row.name,
-        email: row.email,
+        email,
         password: hashed,
         role,
-        studentId: row.studentId || null,
-        section: row.section || null,
+        studentId: row.studentId || row.studentNumber || null,
+        studentNumber: row.studentNumber || row.studentId || null,
+        section: row.section || row.gradeSection || null,
         gradeLevel: row.gradeLevel || null,
+        gradeSection: row.gradeSection || row.section || null,
         department: row.department || null,
+        teacherNumber: row.teacherNumber || null,
+        birthdate: row.birthdate || null,
+        contactNumber: row.contactNumber || row.parentPhone || null,
         parentName: row.parentName || row.parent || null,
         parentEmail: row.parentEmail || null,
-        parentPhone: row.parentPhone || null,
+        parentPhone: row.parentPhone || row.contactNumber || null,
       };
       if (role === 'student') doc.qrCode = User.generateQrToken();
       await User.create(doc);
@@ -179,16 +200,18 @@ exports.updateUser = async (req, res) => {
   }
   try {
     const {
-      name, email, role, department, section, gradeLevel, studentId,
+      name, role, department, section, gradeLevel, gradeSection, studentId, studentNumber,
+      teacherNumber, birthdate, contactNumber,
       parentName, parentEmail, parentPhone,
     } = req.body;
+    const email = req.body.email ? normalizeEmail(req.body.email) : undefined;
     if (role && !ALL_ROLES.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, role, department, section, gradeLevel, studentId,
-        parentName, parentEmail, parentPhone },
+      { name, email, role, department, section, gradeLevel, gradeSection, studentId, studentNumber,
+        teacherNumber, birthdate, contactNumber, parentName, parentEmail, parentPhone },
       { new: true, runValidators: true }
     ).select('-password');
 

@@ -15,8 +15,15 @@
     "Critical"
   ],
   "trainedAt": "2026-05-16T04:49:01.090Z",
+  "dataSource": "synthetic-demo",
+  "productionReady": false,
+  "note": "This checked-in model is usable for system demos only. Retrain with anonymized historical school attendance data before claiming production AI accuracy.",
   "valLoss": 0.1260092407464981,
   "valAcc": 0.9649999737739563,
+  "fallback": {
+    "enabled": true,
+    "description": "The AI alert controller falls back to rule-based scoring if TensorFlow inference is unavailable."
+  },
   "history": {
     "lossLast": 0.1296250820159912,
     "accLast": 0.9645833373069763

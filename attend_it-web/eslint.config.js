@@ -1,3 +1,4 @@
+// ESLint rules for React, hooks, and Vite fast-refresh development.
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

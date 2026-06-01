@@ -1,23 +1,25 @@
-// Wipes the users collection and inserts a demo set (one of each web
-// role plus two student records). Destructive — never run in production.
-// Run with: npm run seed
+// Destructive demo seed. Never enable this in production.
+// Run with: $env:ALLOW_DESTRUCTIVE_SEED='true'; $env:SEED_PASSWORD='...'; npm run seed
 
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-require('dotenv').config();
-
+const connectDB = require('./config/db');
 const User = require('./models/User');
 
-const seedDB = async () => {
+async function seedDB() {
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+    console.error('Refusing to seed. Set ALLOW_DESTRUCTIVE_SEED=true outside production.');
+    process.exit(1);
+  }
+
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB');
+    await connectDB();
 
     await User.deleteMany({});
     console.log('Cleared existing users');
 
-    const hashed = await bcrypt.hash('password123', 10);
-    const stub   = await bcrypt.hash(User.generateQrToken(), 10);
+    const seedPassword = process.env.SEED_PASSWORD || User.generateQrToken();
+    const hashed = await bcrypt.hash(seedPassword, 10);
+    const stub = await bcrypt.hash(User.generateQrToken(), 10);
 
     const users = [
       {
@@ -55,16 +57,17 @@ const seedDB = async () => {
     const saved = await User.insertMany(users);
     console.log('Seeded users:');
     saved.forEach((u) => console.log(`  - ${u.email} (${u.role})`));
-    console.log('\nTest credentials (web):');
-    console.log('  Admin:   admin@test.com   / password123');
-    console.log('  Teacher: teacher@test.com / password123');
-    console.log('  Staff:   pod@test.com     / password123');
+    if (process.env.SEED_PASSWORD) {
+      console.log('Seed users use the password supplied in SEED_PASSWORD.');
+    } else {
+      console.log('Generated a random seed password. Set SEED_PASSWORD when you need known demo credentials.');
+    }
 
     process.exit(0);
   } catch (err) {
     console.error('Error:', err.message);
     process.exit(1);
   }
-};
+}
 
 seedDB();

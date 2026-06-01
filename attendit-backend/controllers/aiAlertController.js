@@ -8,14 +8,28 @@ const Attendance = require('../models/Attendance');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Case = require('../models/Case');
+const Session = require('../models/Session');
 const mongoose = require('mongoose');
 const riskModel = require('../ml/riskModel');
+const { buildScopedStudentQuery, getAccessibleStudentIds, userCanAccessStudent } = require('../utils/accessControl');
 
 riskModel.load().catch((err) => {
   console.warn('[ai-alerts] TF risk model unavailable — using rule-engine fallback.', err.message);
 });
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function escapeRegex(value = '') {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildSessionScopeForStudent(user, student) {
+  const filter = {};
+  const section = student.section || student.gradeSection;
+  if (section) filter.section = new RegExp(`^${escapeRegex(section)}$`, 'i');
+  if (user.role === 'teacher') filter.teacherId = user.id;
+  return filter;
+}
 
 function analyseStudent(records, totalSessions = 0) {
   const sorted = [...records].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -119,7 +133,7 @@ async function buildAlert(student, signals, s) {
   const pat = detectPattern(signals, s);
   if (!pat) return null;
 
-  let score, tier, source = 'model', probabilities;
+  let score, tier, scorer = 'model', modelProbabilities, modelVersion = '';
   try {
     const pred = await riskModel.predict({
       attendanceRate:          signals.attendanceRate,
@@ -132,12 +146,14 @@ async function buildAlert(student, signals, s) {
     });
     score = pred.score;
     tier  = pred.tier;
-    probabilities = pred.probabilities;
+    modelProbabilities = pred.probabilities;
+    const meta = riskModel.meta();
+    modelVersion = meta?.trainedAt || meta?.dataStats?.dataHash?.slice(0, 16) || '';
   } catch (err) {
     const r = ruleScore(signals);
     score = r.score;
     tier  = r.tier;
-    source = 'rules';
+    scorer = 'rules';
   }
 
   return {
@@ -148,9 +164,11 @@ async function buildAlert(student, signals, s) {
     riskScore: score,
     riskLevel: tier,
     recommendations: pat.recs,
+    scorer,
+    modelVersion,
+    modelProbabilities,
     status: 'New',
     flaggedOn: new Date(),
-    _meta: { source, probabilities },
   };
 }
 
@@ -162,22 +180,20 @@ exports.runAnalysis = async (req, res) => {
     let s = await Settings.findOne({ key: 'global' });
     if (!s) s = await Settings.create({ key: 'global' });
 
-    const Session = require('../models/Session');
-    const totalSessions = await Session.countDocuments();
-
-    const students = await User.find({ role: 'student', isActive: true });
+    const students = await User.find(await buildScopedStudentQuery(req.user));
     let created = 0, refreshed = 0;
     let modelHits = 0, ruleHits = 0;
 
     for (const student of students) {
-      const records = await Attendance.find({ studentId: student._id });
-      const signals = analyseStudent(records, totalSessions);
+      const sessions = await Session.find(buildSessionScopeForStudent(req.user, student)).select('_id');
+      const sessionIds = sessions.map((session) => session._id);
+      const records = await Attendance.find({ studentId: student._id, sessionId: { $in: sessionIds } });
+      const signals = analyseStudent(records, sessionIds.length);
       const draft = await buildAlert(student, signals, s);
       if (!draft) continue;
 
-      if (draft._meta?.source === 'model') modelHits++;
+      if (draft.scorer === 'model') modelHits++;
       else ruleHits++;
-      delete draft._meta;
 
       const existing = await AIAlert.findOne({
         student: student._id,
@@ -210,6 +226,9 @@ exports.listAlerts = async (req, res) => {
     const filter = {};
     if (req.query.status)    filter.status    = req.query.status;
     if (req.query.riskLevel) filter.riskLevel = req.query.riskLevel;
+    if (!['admin', 'staff'].includes(req.user.role)) {
+      filter.student = { $in: await getAccessibleStudentIds(req.user) };
+    }
     const alerts = await AIAlert.find(filter)
       .populate('student', 'name email studentId section gradeLevel parentName parentEmail parentPhone')
       .populate('linkedCase', 'status riskLevel')
@@ -226,6 +245,9 @@ exports.updateAlert = async (req, res) => {
   }
   try {
     const { status, linkedCase } = req.body;
+    if (status && !['New', 'Under Review', 'Actioned', 'Dismissed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
     const patch = {};
     if (status) patch.status = status;
     if (linkedCase !== undefined) patch.linkedCase = linkedCase;
@@ -235,6 +257,12 @@ exports.updateAlert = async (req, res) => {
       patch.reviewedBy = reviewerId;
     }
     patch.reviewedAt = new Date();
+
+    const existing = await AIAlert.findById(req.params.id).populate('student', 'section gradeSection');
+    if (!existing) return res.status(404).json({ message: 'Alert not found' });
+    if (!await userCanAccessStudent(req.user, existing.student)) {
+      return res.status(403).json({ message: 'You can only update alerts for students in your scope.' });
+    }
 
     const alert = await AIAlert.findByIdAndUpdate(req.params.id, patch, { new: true })
       .populate('student', 'name email studentId section parentName parentEmail');
@@ -252,6 +280,9 @@ exports.escalateAlert = async (req, res) => {
   try {
     const alert = await AIAlert.findById(req.params.id).populate('student');
     if (!alert) return res.status(404).json({ message: 'Alert not found' });
+    if (!await userCanAccessStudent(req.user, alert.student)) {
+      return res.status(403).json({ message: 'You can only escalate alerts for students in your scope.' });
+    }
     if (alert.linkedCase) return res.status(400).json({ message: 'Alert already escalated' });
 
     const newCase = await Case.create({

@@ -118,7 +118,7 @@ export default function Analytics() {
           onClick={handleRunAnalysis}
           disabled={isAnalyzing}
           className={`flex items-center px-6 py-3 rounded-xl font-bold text-white transition-all shadow-sm ${
-            isAnalyzing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            isAnalyzing ? 'bg-brand-400 cursor-not-allowed' : 'bg-brand-600 hover:bg-brand-700'
           }`}
         >
           {isAnalyzing ? (
@@ -136,7 +136,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Overall Attendance</p>
-          <h2 className="text-4xl font-black text-blue-600 mb-2">{loading ? '—' : `${summary.overallRate}%`}</h2>
+          <h2 className="text-4xl font-black text-brand-600 mb-2">{loading ? '—' : `${summary.overallRate}%`}</h2>
           <p className="text-xs font-medium text-slate-500">
             {summary.present + summary.late} of {summary.present + summary.late + summary.absent} marked present/late
           </p>

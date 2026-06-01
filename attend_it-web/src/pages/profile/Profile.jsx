@@ -96,7 +96,7 @@ export default function Profile() {
 
       {/* Identity card */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-black">
+        <div className="w-16 h-16 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xl font-black">
           {initials}
         </div>
         <div className="flex-1">
@@ -136,7 +136,7 @@ export default function Profile() {
           </Field>
           <div className="flex justify-end">
             <button type="submit" disabled={savingProfile}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold rounded-lg text-sm flex items-center gap-2">
+              className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold rounded-lg text-sm flex items-center gap-2">
               <Save className="w-4 h-4" /> {savingProfile ? 'Saving…' : 'Save Profile'}
             </button>
           </div>
@@ -178,7 +178,7 @@ export default function Profile() {
         </form>
       </div>
 
-      <style>{`.profile-input{width:100%;padding:.625rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.profile-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.profile-input{width:100%;padding:.625rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.profile-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }

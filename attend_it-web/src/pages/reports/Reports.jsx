@@ -186,7 +186,7 @@ export default function Reports() {
 
   const fmtBadge = (fmt) => ({
     CSV:   'bg-emerald-100 text-emerald-700',
-    Excel: 'bg-blue-100 text-blue-700',
+    Excel: 'bg-brand-100 text-brand-700',
     PDF:   'bg-rose-100 text-rose-700',
   }[fmt] || 'bg-slate-100 text-slate-600');
 
@@ -194,7 +194,7 @@ export default function Reports() {
     <div className="max-w-6xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <FileBarChart className="w-7 h-7 text-blue-500" /> System Reports
+          <FileBarChart className="w-7 h-7 text-brand-500" /> System Reports
         </h1>
         <p className="text-slate-500 mt-1">Generate, configure, and export official data.</p>
       </header>
@@ -208,7 +208,7 @@ export default function Reports() {
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Report Type</label>
               <select value={reportType} onChange={(e) => setReportType(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500">
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500">
                 {REPORTS.map((r) => <option key={r.key}>{r.key}</option>)}
               </select>
               <p className="text-xs text-slate-400 mt-1">{REPORTS.find((r) => r.key === reportType)?.desc}</p>
@@ -257,7 +257,7 @@ function FormatBtn({ icon, label, active, onClick }) {
   return (
     <button type="button" onClick={onClick}
       className={`flex flex-col items-center justify-center gap-1 py-3 rounded-lg border text-xs font-bold transition-all ${
-        active ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+        active ? 'bg-brand-50 border-brand-500 text-brand-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
       }`}>
       {icon} {label}
     </button>

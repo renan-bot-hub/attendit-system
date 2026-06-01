@@ -1,3 +1,4 @@
+// Vite build configuration for the Attend IT React web app.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 

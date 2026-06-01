@@ -72,7 +72,7 @@ export default function SystemConfig() {
         <div className="flex items-center gap-3">
           {success && <span className="text-emerald-600 font-bold flex items-center text-sm"><CheckCircle className="w-4 h-4 mr-1" /> Saved</span>}
           <button onClick={handleSave} disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-6 py-2.5 rounded-xl font-bold flex items-center text-sm shadow-sm">
+            className="bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white px-6 py-2.5 rounded-xl font-bold flex items-center text-sm shadow-sm">
             <Save className="w-4 h-4 mr-2" /> {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -141,7 +141,7 @@ export default function SystemConfig() {
         <Row label="Address"><textarea className="cfg-input" rows="2" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Row>
       </Section>
 
-      <style>{`.cfg-input{width:100%;padding:.625rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.cfg-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.cfg-input{width:100%;padding:.625rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.cfg-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }

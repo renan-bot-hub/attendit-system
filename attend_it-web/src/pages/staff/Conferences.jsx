@@ -60,7 +60,7 @@ export default function Conferences() {
 
   const statusBadge = (s) => {
     const map = {
-      Scheduled: 'bg-blue-50 text-blue-700',
+      Scheduled: 'bg-brand-50 text-brand-700',
       Completed: 'bg-emerald-50 text-emerald-700',
       Cancelled: 'bg-slate-100 text-slate-600',
     };
@@ -71,7 +71,7 @@ export default function Conferences() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <CalendarDays className="w-7 h-7 text-blue-500" /> Disciplinary Actions & Conferences
+          <CalendarDays className="w-7 h-7 text-brand-500" /> Disciplinary Actions & Conferences
         </h1>
         <p className="text-slate-500 mt-2">Track parent–teacher conferences scheduled by the Prefect of Discipline.</p>
       </div>
@@ -82,7 +82,7 @@ export default function Conferences() {
         {STATUS_TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
-              tab === t ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              tab === t ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             }`}>{t}</button>
         ))}
       </div>
@@ -186,14 +186,14 @@ export default function Conferences() {
               </div>
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm">Save</button>
+                <button type="submit" className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm">Save</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <style>{`.conf-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.conf-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.conf-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.conf-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }

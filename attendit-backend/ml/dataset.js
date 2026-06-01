@@ -88,4 +88,4 @@ function generate({ n = 5000, thresholds = DEFAULT_THRESHOLDS } = {}) {
   return { X, y, classes: RISK_TIERS };
 }
 
-module.exports = { generate, sampleOne, DEFAULT_THRESHOLDS };
+module.exports = { generate, labelFor, sampleOne, DEFAULT_THRESHOLDS };

@@ -155,7 +155,7 @@ export default function Threads() {
           </p>
         </div>
         {canOpenThread && (
-          <button onClick={openNewModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
+          <button onClick={openNewModal} className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
             <Plus className="w-4 h-4 mr-1" /> Open Thread
           </button>
         )}
@@ -169,10 +169,10 @@ export default function Threads() {
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search threads…"
-                className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
               <option>All</option>
               <option>Open</option>
               <option>Closed</option>
@@ -188,7 +188,7 @@ export default function Threads() {
                 key={t._id}
                 onClick={() => setActive(t)}
                 className={`w-full text-left p-4 border-b border-slate-50 transition-colors ${
-                  active?._id === t._id ? 'bg-blue-50/50 border-l-4 border-blue-500' : 'hover:bg-slate-50 border-l-4 border-transparent'
+                  active?._id === t._id ? 'bg-brand-50/50 border-l-4 border-brand-500' : 'hover:bg-slate-50 border-l-4 border-transparent'
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -207,7 +207,7 @@ export default function Threads() {
                       <ShieldAlert className="w-3 h-3" /> Case
                     </span>
                   )}
-                  {t.unread > 0 && <span className="bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{t.unread}</span>}
+                  {t.unread > 0 && <span className="bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{t.unread}</span>}
                 </div>
               </button>
             ))}
@@ -250,12 +250,12 @@ export default function Threads() {
                   const isMe = (m.sender?._id || m.sender) === me?.id;
                   return (
                     <div key={m._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-blue-500 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm'}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-brand-500 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm'}`}>
                         <p className="text-[10px] font-bold uppercase tracking-wider opacity-70 mb-0.5">
                           {m.sender?.name || '—'} {m.sender?.role ? `(${m.sender.role})` : ''}
                         </p>
                         <p className="text-sm whitespace-pre-wrap">{m.text}</p>
-                        <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-100' : 'text-slate-400'}`}>{formatTime(m.createdAt)}</p>
+                        <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-brand-100' : 'text-slate-400'}`}>{formatTime(m.createdAt)}</p>
                       </div>
                     </div>
                   );
@@ -272,9 +272,9 @@ export default function Threads() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Type a message…"
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
-                    <button type="submit" disabled={!input.trim()} className="p-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full disabled:opacity-50">
+                    <button type="submit" disabled={!input.trim()} className="p-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-full disabled:opacity-50">
                       <Send className="h-4 w-4" />
                     </button>
                   </form>
@@ -310,7 +310,7 @@ export default function Threads() {
               </div>
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button type="button" onClick={() => setShowNew(false)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm">Open</button>
+                <button type="submit" className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm">Open</button>
               </div>
             </form>
           </div>

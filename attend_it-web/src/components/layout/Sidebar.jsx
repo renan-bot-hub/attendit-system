@@ -5,9 +5,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, ClipboardCheck, BookOpen, MessageCircle, FileText,
-  BarChart3, Settings, FileBarChart, UserCircle, LogOut, GraduationCap, Menu, X,
+  BarChart3, Settings, FileBarChart, UserCircle, LogOut, Menu, X,
   ShieldAlert, Megaphone, CalendarDays, FolderCheck, IdCard,
 } from 'lucide-react';
+import SchoolMark from '../branding/SchoolMark';
 import { useSchool } from '../../context/useSchool';
 import { authService } from '../../services/authService';
 
@@ -102,21 +103,24 @@ export default function Sidebar() {
 
   const roleAccent = {
     admin:   'text-amber-400',
-    teacher: 'text-blue-400',
+    teacher: 'text-brand-400',
     staff:   'text-rose-400',
-  }[role] || 'text-blue-400';
+  }[role] || 'text-brand-400';
 
   const content = (
-    <div className="w-64 bg-[#172033] text-white h-full flex flex-col border-r border-slate-800">
+    <div className="sidebar-shell w-64 text-white h-full flex flex-col border-r border-white/10">
       <div className="px-4 py-4 border-b border-white/10">
-        <div className="flex items-center gap-2 mb-1">
-          <GraduationCap className="w-6 h-6 text-blue-300" />
-          <h2 className="text-base font-semibold text-white leading-tight truncate">
-            {settings.schoolName}
-          </h2>
+        <div className="flex items-center gap-3 mb-2">
+          <SchoolMark className="w-11 h-11 shrink-0 drop-shadow-sm" compact />
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-white leading-tight truncate">
+              {settings.schoolName}
+            </h2>
+            <p className="text-[10px] font-bold text-brand-100 uppercase">Manila</p>
+          </div>
         </div>
-        <p className="text-slate-400 text-[11px] font-medium">
-          {settings.schoolType} school • AY {settings.academicYear}
+        <p className="text-white/60 text-[11px] font-medium">
+          {settings.schoolType} school | AY {settings.academicYear}
         </p>
       </div>
 
@@ -131,8 +135,8 @@ export default function Sidebar() {
               onClick={() => setOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                 isActive
-                  ? 'bg-blue-500/15 text-white font-semibold border border-blue-400/30'
-                  : 'text-slate-300 hover:bg-white/5 hover:text-white font-medium border border-transparent'
+                  ? 'bg-white/10 text-white font-semibold border border-brand-300/30 shadow-sm'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white font-medium border border-transparent'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -156,7 +160,7 @@ export default function Sidebar() {
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-white/[0.08] hover:bg-white/[0.12] text-slate-200 hover:text-white px-3 py-2 rounded-lg transition-all text-xs font-semibold border border-white/10"
+          className="w-full flex items-center justify-center gap-2 bg-white/[0.08] hover:bg-white/[0.14] text-white/75 hover:text-white px-3 py-2 rounded-lg transition-all text-xs font-semibold border border-white/10"
         >
           <LogOut className="w-3.5 h-3.5" /> Sign Out
         </button>
@@ -166,9 +170,9 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-[#172033] text-white px-4 py-3 flex items-center justify-between z-20 border-b border-white/10">
+      <div className="md:hidden fixed top-0 left-0 right-0 sidebar-shell text-white px-4 py-3 flex items-center justify-between z-20 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <GraduationCap className="w-5 h-5 text-blue-300" />
+          <SchoolMark className="w-8 h-8 shrink-0" compact />
           <span className="font-semibold text-sm truncate">{settings.schoolName}</span>
         </div>
         <button onClick={() => setOpen(true)} aria-label="Open menu">

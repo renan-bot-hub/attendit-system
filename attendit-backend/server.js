@@ -4,7 +4,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+require('./config/env');
+const connectDB = require('./config/db');
+const { securityHeaders, createRateLimiter } = require('./middleware/securityMiddleware');
+const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const authRoutes         = require('./routes/authRoutes');
 const attendanceRoutes   = require('./routes/attendanceRoutes');
@@ -18,9 +21,12 @@ const announcementRoutes = require('./routes/announcementRoutes');
 const documentRoutes     = require('./routes/documentRoutes');
 const conferenceRoutes   = require('./routes/conferenceRoutes');
 const sectionRoutes      = require('./routes/sectionRoutes');
+const qrRoutes           = require('./routes/qrRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
+app.use(securityHeaders);
+app.use(createRateLimiter());
 
 // Allow all localhost dev ports (5173-5180) + any configured CLIENT_ORIGIN
 const defaultDev = [
@@ -72,11 +78,10 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/documents',     documentRoutes);
 app.use('/api/conferences',   conferenceRoutes);
 app.use('/api/sections',      sectionRoutes);
+app.use('/api/qr',            qrRoutes);
 
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(err.status || 500).json({ message: err.message || 'Server error' });
-});
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 if (!process.env.MONGO_URI) {
   console.error('FATAL: MONGO_URI is not set. Add it to .env (local) or Render env vars.');
@@ -91,8 +96,7 @@ const PORT = process.env.PORT || 5000;
 
 async function start() {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB connected successfully');
+    await connectDB();
 
     const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     server.on('error', (err) => {
@@ -103,9 +107,13 @@ async function start() {
       throw err;
     });
   } catch (err) {
-    console.error('MongoDB connection error:', err.message);
+    console.error(err.message);
     process.exit(1);
   }
 }
 
-start();
+if (require.main === module) {
+  start();
+}
+
+module.exports = { app, start };

@@ -9,8 +9,8 @@ export const SchoolContext = createContext(null);
 
 export function SchoolProvider({ children }) {
   const [settings, setSettings] = useState({
-    schoolName: 'My School',
-    schoolType: 'public',
+    schoolName: 'Holy Heart Christian Academy',
+    schoolType: 'private',
     academicYear: '2025-2026',
     lateCutoffTime: '07:30',
     autoAbsentTime: '17:00',

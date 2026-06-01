@@ -1,7 +1,7 @@
 # Dependencies (also covered by per-package .gitignores)
 node_modules/
 
-# Environment files — never commit secrets
+# Environment files - never commit secrets
 .env
 .env.local
 .env.*.local
@@ -24,3 +24,9 @@ yarn-error.log*
 
 # Misc
 .cache/
+attendit-db-import/
+attendit-backend/ml/private-data/
+attendit-backend/ml/training-data*.csv
+attendit-backend/ml/training-data*.json
+!attendit-backend/ml/training-data.example.csv
+!attendit-backend/ml/training-data.example.json

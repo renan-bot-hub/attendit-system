@@ -3,11 +3,30 @@
 
 const Conference = require('../models/Conference');
 const Case = require('../models/Case');
+const {
+  findStudentsForParentUser,
+  getAccessibleStudentIds,
+} = require('../utils/accessControl');
+
+async function buildConferenceFilter(req) {
+  const filter = {};
+  if (req.query.status) filter.status = req.query.status;
+
+  if (req.user.role === 'parent') {
+    const students = await findStudentsForParentUser(req.user.id);
+    filter.student = { $in: students.map((student) => student._id) };
+  } else if (req.user.role === 'teacher') {
+    filter.student = { $in: await getAccessibleStudentIds(req.user) };
+  } else if (!['admin', 'staff'].includes(req.user.role)) {
+    filter.student = { $in: [] };
+  }
+
+  return filter;
+}
 
 exports.list = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.status) filter.status = req.query.status;
+    const filter = await buildConferenceFilter(req);
     const items = await Conference.find(filter)
       .populate('student',     'name studentId section gradeLevel parentName parentEmail parentPhone')
       .populate('caseRef',     'riskLevel status')

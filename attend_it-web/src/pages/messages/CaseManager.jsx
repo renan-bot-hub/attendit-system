@@ -137,7 +137,7 @@ export default function CaseManager() {
 
   const statusBadge = (status) => {
     const map = {
-      Open:      'bg-blue-50 text-blue-700',
+      Open:      'bg-brand-50 text-brand-700',
       Pending:   'bg-amber-50 text-amber-700',
       Escalated: 'bg-red-50 text-red-700',
       Approved:  'bg-emerald-50 text-emerald-700',
@@ -168,7 +168,7 @@ export default function CaseManager() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm"
+          className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm"
         >
           <Plus className="w-4 h-4 mr-1" /> New Case
         </button>
@@ -176,7 +176,7 @@ export default function CaseManager() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <CountTile active={tab === 'All'}        label="Total"     value={counts.total}     onClick={() => setTab('All')} />
-        <CountTile active={tab === 'Open'}       label="Open"      value={counts.open}      onClick={() => setTab('Open')} accent="text-blue-600" />
+        <CountTile active={tab === 'Open'}       label="Open"      value={counts.open}      onClick={() => setTab('Open')} accent="text-brand-600" />
         <CountTile active={tab === 'Escalated'}  label="Escalated" value={counts.escalated} onClick={() => setTab('Escalated')} accent="text-red-600" />
         <CountTile active={tab === 'Resolved'}   label="Resolved"  value={counts.resolved}  onClick={() => setTab('Resolved')} accent="text-emerald-600" />
       </div>
@@ -193,13 +193,13 @@ export default function CaseManager() {
                 placeholder="Search student or ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
               />
             </div>
             <select
               value={risk}
               onChange={(e) => setRisk(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option>All</option>
               <option>Critical</option>
@@ -218,7 +218,7 @@ export default function CaseManager() {
                 key={c._id}
                 onClick={() => setSelected(c)}
                 className={`w-full text-left p-4 border-b border-slate-50 transition-colors ${
-                  selected?._id === c._id ? 'bg-blue-50/50 border-l-4 border-blue-500' : 'hover:bg-slate-50 border-l-4 border-transparent'
+                  selected?._id === c._id ? 'bg-brand-50/50 border-l-4 border-brand-500' : 'hover:bg-slate-50 border-l-4 border-transparent'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
@@ -288,7 +288,7 @@ export default function CaseManager() {
                     <div className="bg-slate-100 border border-dashed border-slate-300 rounded-lg p-4 flex items-center gap-3">
                       <FileText className="w-6 h-6 text-slate-400" />
                       <p className="text-sm font-medium text-slate-700">{selected.fileName}</p>
-                      <button className="ml-auto text-blue-600 text-xs font-bold hover:text-blue-800 flex items-center">
+                      <button className="ml-auto text-brand-600 text-xs font-bold hover:text-brand-800 flex items-center">
                         <FileDown className="w-3 h-3 mr-1" /> Download
                       </button>
                     </div>
@@ -401,7 +401,7 @@ export default function CaseManager() {
               </Field>
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
                 <button type="button" onClick={() => setShowNew(false)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button type="submit" disabled={submitting} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60 shadow-sm">
+                <button type="submit" disabled={submitting} className="px-6 py-2 bg-brand-600 text-white font-bold rounded-lg text-sm hover:bg-brand-700 disabled:opacity-60 shadow-sm">
                   {submitting ? 'Submitting…' : 'Submit Case'}
                 </button>
               </div>
@@ -410,14 +410,14 @@ export default function CaseManager() {
         </div>
       )}
 
-      <style>{`.cm-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.cm-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.cm-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.cm-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }
 
 function CountTile({ label, value, accent, onClick, active }) {
   return (
-    <button onClick={onClick} className={`bg-white p-4 rounded-2xl border text-left transition-all ${active ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300'}`}>
+    <button onClick={onClick} className={`bg-white p-4 rounded-2xl border text-left transition-all ${active ? 'border-brand-500 ring-2 ring-brand-100' : 'border-slate-200 hover:border-slate-300'}`}>
       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</p>
       <p className={`text-2xl font-black mt-1 ${accent || 'text-slate-800'}`}>{value}</p>
     </button>

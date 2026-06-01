@@ -3,11 +3,11 @@
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
+import SchoolMark from '../../components/branding/SchoolMark';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
 
-// Public signup page (teacher or student; first user auto-becomes admin)
 export default function Signup() {
   const [form, setForm] = useState({
     name: '', email: '', password: '', role: 'teacher',
@@ -18,7 +18,6 @@ export default function Signup() {
   const navigate = useNavigate();
   const { settings } = useSchool();
 
-  // Submit the signup form; show a bootstrap notice if this user got admin
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
@@ -26,7 +25,7 @@ export default function Signup() {
     try {
       const res = await authService.signup(form);
       if (res?.bootstrapAdmin) {
-        alert('You are the first user — your account has been set as the system administrator. Please log in.');
+        alert('You are the first user - your account has been set as the system administrator. Please log in.');
       } else {
         alert('Account created. Please log in.');
       }
@@ -39,21 +38,21 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-5 md:p-8">
-      <div className="max-w-lg w-full bg-white p-6 md:p-7 rounded-xl shadow-sm border border-slate-200">
-        <div className="text-center mb-6">
-          <GraduationCap className="w-9 h-9 text-blue-600 mx-auto mb-2" />
+    <div className="auth-page min-h-screen flex items-center justify-center p-5 md:p-8">
+      <div className="auth-card max-w-lg w-full bg-white/90 p-6 md:p-7 rounded-xl shadow-md border border-slate-200">
+        <div className="text-center mb-6 relative z-10">
+          <SchoolMark className="w-20 h-20 mx-auto mb-3" />
           <h1 className="text-xl font-semibold text-slate-900">{settings.schoolName}</h1>
           <p className="text-slate-500 text-sm font-medium mt-1">Create account</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg relative z-10">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Full Name" required>
               <input type="text" required value={form.name}
@@ -91,27 +90,26 @@ export default function Signup() {
 
           <p className="text-xs text-slate-500 leading-5">
             Administrator accounts can only be created from inside the system by an existing admin.
-            Students are managed as records by the admin (no web login); parents access the system via the mobile app.
+            Students are managed as records by the admin. Parents access the system via the mobile app.
           </p>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <UserPlus className="w-4 h-4" /> {loading ? 'Creating…' : 'Create Account'}
+            <UserPlus className="w-4 h-4" /> {loading ? 'Creating...' : 'Create Account'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account? <Link to="/login" className="text-blue-600 font-semibold hover:underline">Log in</Link>
+        <p className="mt-6 text-center text-sm text-slate-600 relative z-10">
+          Already have an account? <Link to="/login" className="text-brand-600 font-semibold hover:underline">Log in</Link>
         </p>
       </div>
     </div>
   );
 }
 
-// Labeled form-field wrapper used inside this page
 function Field({ label, required, children }) {
   return (
     <div>

@@ -106,7 +106,7 @@ export default function CriticalCases() {
                     <p className="text-sm text-slate-600 mt-1 line-clamp-2">{c.description}</p>
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
-                    <button onClick={() => setConfFor(c)} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1">
+                    <button onClick={() => setConfFor(c)} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-1">
                       <CalendarPlus className="w-3 h-3" /> Schedule
                     </button>
                     <button onClick={() => resolve(c._id)} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-1">
@@ -159,14 +159,14 @@ export default function CriticalCases() {
               <Field label="Agenda"><textarea rows={3} value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} className="cc-input" /></Field>
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button type="button" onClick={() => setConfFor(null)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Cancel</button>
-                <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm">Schedule</button>
+                <button type="submit" className="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg text-sm">Schedule</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <style>{`.cc-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.cc-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.5);border-color:#3b82f6}`}</style>
+      <style>{`.cc-input{width:100%;padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.875rem;background:#fff;outline:none}.cc-input:focus{box-shadow:0 0 0 2px rgba(155,13,46,.25);border-color:#9B0D2E}`}</style>
     </div>
   );
 }

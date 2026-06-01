@@ -1,5 +1,5 @@
+// Custom hook for reading shared school settings from SchoolContext.
 import { useContext } from 'react';
 import { SchoolContext } from './SchoolContext';
 
-// Hook to read school settings (school name, type, thresholds, etc.)
 export const useSchool = () => useContext(SchoolContext);
