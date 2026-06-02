@@ -6,7 +6,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/parent/parent_profile.dart';
 import '../screens/parent/parent_home.dart';
 import '../screens/parent/parent_faqs.dart';
-import '../screens/parent/parent_message.dart'; 
+import '../screens/parent/parent_message.dart';
 import '../screens/parent/parent_alert.dart';
 
 import '../screens/teacher/teacher_home.dart';
@@ -61,11 +61,11 @@ class _AppLayoutState extends State<AppLayout> {
     if (_isTeacher) {
       switch (_selectedIndex) {
         case 0:
-          return "Home";
-        case 1:
           return "Attendance";
-        case 2:
+        case 1:
           return "Analytics";
+        case 2:
+          return "Scan";
         case 3:
           return "Messages";
         default:
@@ -77,38 +77,38 @@ class _AppLayoutState extends State<AppLayout> {
   }
 
   Widget _getScreen() {
-  if (_isParent) {
-    switch (_selectedIndex) {
-      case 0:
-        return ParentHome(user: user);
-      case 1:
-        return const ParentFaqs();
-      case 2:
-        return const ParentMessage();
-      default:
-        return ParentHome(user: user);
+    if (_isParent) {
+      switch (_selectedIndex) {
+        case 0:
+          return ParentHome(user: user);
+        case 1:
+          return const ParentFaqs();
+        case 2:
+          return const ParentMessage();
+        default:
+          return ParentHome(user: user);
+      }
     }
-  }
 
-  if (_isTeacher) {
-    switch (_selectedIndex) {
-      case 0:
-        return TeacherHome(user: user);
-      case 1:
-        return TeacherAttendance(user: user);
-      case 2:
-        return TeacherAnalytics(user: user);
-      case 3:
-        return const TeacherMessage();
-      default:
-        return TeacherHome(user: user);
+    if (_isTeacher) {
+      switch (_selectedIndex) {
+        case 0:
+          return TeacherAttendance(user: user);
+        case 1:
+          return TeacherAnalytics(user: user);
+        case 2:
+          return TeacherHome(user: user);
+        case 3:
+          return const TeacherMessage();
+        default:
+          return TeacherAttendance(user: user);
+      }
     }
-  }
 
-  return const Center(
-    child: Text("Unknown User Role"),
-  );
-}
+    return const Center(
+      child: Text("Unknown User Role"),
+    );
+  }
 
   void _onTap(int index) {
     final logoutIndex = _isParent ? 3 : 4;
@@ -231,16 +231,16 @@ class _AppLayoutState extends State<AppLayout> {
 
     return const [
       BottomNavigationBarItem(
-        icon: Icon(Icons.home),
-        label: "Home",
-      ),
-      BottomNavigationBarItem(
         icon: Icon(Icons.fact_check),
         label: "Attendance",
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.bar_chart),
         label: "Analytics",
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.qr_code_scanner),
+        label: "Scan",
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.chat),
@@ -257,7 +257,6 @@ class _AppLayoutState extends State<AppLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: maroon,
         elevation: 0,
@@ -287,14 +286,12 @@ class _AppLayoutState extends State<AppLayout> {
           ),
         ],
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(15),
           child: _getScreen(),
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: maroon,
         type: BottomNavigationBarType.fixed,
