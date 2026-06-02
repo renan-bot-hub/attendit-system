@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/chat_service.dart';
 
 class TeacherMessage extends StatefulWidget {
   const TeacherMessage({super.key});
@@ -9,103 +10,16 @@ class TeacherMessage extends StatefulWidget {
 
 class _TeacherMessageState extends State<TeacherMessage> {
   final TextEditingController controller = TextEditingController();
-
   final ScrollController scrollController = ScrollController();
 
-  List<Map<String, dynamic>> messages = [
-    {
-      "text": "Parent selected: Get Started",
-      "isBot": false,
-      "isOption": true,
-    },
-    {
-      "text":
-          "Hi! I'm AttendBot, your virtual assistant. How can I help you today?",
-      "isBot": true,
-    },
-    {
-      "text": "Parent selected: Homeroom Schedule",
-      "isBot": false,
-      "isOption": true,
-    },
-    {
-      "text": "Homeroom is scheduled Monday to Friday at 7:30 AM.",
-      "isBot": true,
-    },
-    {
-      "text": "Parent selected: Justify Absence",
-      "isBot": false,
-      "isOption": true,
-    },
-    {
-      "text":
-          "You may submit an excuse letter through the system or inform the adviser.",
-      "isBot": true,
-    },
-  ];
-
-  void selectOption(String option) {
-    setState(() {
-      messages.add({
-        "text": "Parent selected: $option",
-        "isBot": false,
-        "isOption": true,
-      });
-    });
-
-    scrollToBottom();
-
-    Future.delayed(const Duration(milliseconds: 400), () {
-      setState(() {
-        messages.add({
-          "text": getBotReply(option),
-          "isBot": true,
-        });
-      });
-
-      scrollToBottom();
-    });
-  }
-
-  String getBotReply(String input) {
-    final text = input.toLowerCase();
-
-    if (text.contains("homeroom")) {
-      return "Homeroom is every Monday to Friday at 7:30 AM.";
-    }
-
-    if (text.contains("rules")) {
-      return "Students must log attendance before class and follow school monitoring rules.";
-    }
-
-    if (text.contains("adviser")) {
-      return "You can contact the adviser during school hours or through the system.";
-    }
-
-    if (text.contains("absence")) {
-      return "Submit an excuse letter or inform the adviser for validation.";
-    }
-
-    return "Your request has been recorded.";
-  }
-
   void sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-
-    setState(() {
-      messages.add({
-        "text": "Teacher: ${text.trim()}",
-        "isBot": true,
-        "isTeacher": true,
-      });
-    });
-
+    ChatService.sendTeacherMessage(text);
     controller.clear();
     scrollToBottom();
   }
 
   void scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 150), () {
       if (scrollController.hasClients) {
         scrollController.animateTo(
           scrollController.position.maxScrollExtent,
@@ -180,13 +94,11 @@ class _TeacherMessageState extends State<TeacherMessage> {
             ),
           ),
           GestureDetector(
-            onTap: () {
-              sendMessage(controller.text);
-            },
+            onTap: () => sendMessage(controller.text),
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 255, 255, 255),
+                color: Color.fromARGB(255, 128, 36, 36),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -211,7 +123,7 @@ class _TeacherMessageState extends State<TeacherMessage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color.fromARGB(255, 255, 255, 255),
+      color: Colors.white,
       child: Column(
         children: [
           Expanded(
@@ -223,16 +135,25 @@ class _TeacherMessageState extends State<TeacherMessage> {
               child: Column(
                 children: [
                   Expanded(
-                    child: ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(15),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        return buildMessage(messages[index]);
+                    child: ValueListenableBuilder(
+                      valueListenable: ChatService.messages,
+                      builder: (context, chatMessages, _) {
+                        final messages =
+                            chatMessages.map((message) => message.toMap()).toList();
+
+                        scrollToBottom();
+
+                        return ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(15),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            return buildMessage(messages[index]);
+                          },
+                        );
                       },
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: buildChatBar(),

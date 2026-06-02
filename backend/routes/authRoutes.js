@@ -7,8 +7,10 @@ const {
   login,
   sendOTP,
   verifyOTP,
+  updateProfile,
 } = require("../controllers/authController");
 
+const authMiddleware = require("../middleware/authMiddleware");
 const { validateBody } = require("../middleware/validateRequest");
 
 const signupSchema = {
@@ -44,11 +46,25 @@ const verifyOtpSchema = {
   otp: { type: "string", required: true, minLength: 6, maxLength: 6 },
 };
 
+const updateProfileSchema = {
+  name: { type: "string", required: true, maxLength: 120 },
+  contactNumber: { type: "string", maxLength: 40 },
+  birthdate: { type: "string", maxLength: 40 },
+  gradeSection: { type: "string", maxLength: 120 },
+};
+
 router.post("/signup", validateBody(signupSchema), signup);
 router.post("/register", validateBody(registerSchema), register);
 router.post("/login", validateBody(loginSchema), login);
 
 router.post("/send-otp", validateBody(otpEmailSchema), sendOTP);
 router.post("/verify-otp", validateBody(verifyOtpSchema), verifyOTP);
+
+router.put(
+  "/update-profile",
+  authMiddleware,
+  validateBody(updateProfileSchema),
+  updateProfile
+);
 
 module.exports = router;

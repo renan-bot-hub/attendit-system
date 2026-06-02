@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/chat_service.dart';
 
 class ParentMessage extends StatefulWidget {
   const ParentMessage({super.key});
@@ -9,18 +10,9 @@ class ParentMessage extends StatefulWidget {
 
 class _ParentMessageState extends State<ParentMessage> {
   final TextEditingController controller = TextEditingController();
-
   final ScrollController scrollController = ScrollController();
 
-  List<Map<String, dynamic>> messages = [
-    {
-      "text":
-          "Hi! I'm AttendBot, your virtual assistant. How can I help you today?",
-      "isBot": true,
-    }
-  ];
-
-  final List<String> quickOptions = [
+  final List<String> allQuickOptions = [
     "Get Started",
     "Homeroom Schedule",
     "Rules for Monitoring",
@@ -28,40 +20,146 @@ class _ParentMessageState extends State<ParentMessage> {
     "Justify Absence",
   ];
 
+  final Set<String> selectedOptions = {};
+
+  List<String> get availableQuickOptions {
+    return allQuickOptions.where((option) {
+      return !selectedOptions.contains(option);
+    }).toList();
+  }
+
   void sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+    ChatService.sendParentMessage(text);
+    controller.clear();
+    scrollToBottom();
+  }
+
+  void sendOption(String text) {
+    Navigator.pop(context);
 
     setState(() {
-      messages.add({
-        "text": text,
-        "isBot": false,
-      });
+      selectedOptions.add(text);
     });
 
-    controller.clear();
-
+    ChatService.sendParentMessage(text, isOption: true);
     scrollToBottom();
+  }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      setState(() {
-        messages.add({
-          "text":
-              "Your request regarding \"$text\" has been received by the teacher.",
-          "isBot": true,
-        });
-      });
+  void showFAQOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        final options = availableQuickOptions;
 
-      scrollToBottom();
-    });
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 45,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 15),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              const Row(
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    color: Color.fromARGB(255, 128, 36, 36),
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    "Frequently Asked Questions",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+
+              if (options.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 245, 245, 245),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Text(
+                    "You already selected all FAQ choices.",
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                ...options.map((option) {
+                  return GestureDetector(
+                    onTap: () => sendOption(option),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 13,
+                        horizontal: 15,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 245, 245, 245),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 128, 36, 36),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.help_outline,
+                            color: Color.fromARGB(255, 128, 36, 36),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              option,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 15,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void showAttachmentOptions() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Wrap(
@@ -71,14 +169,9 @@ class _ParentMessageState extends State<ParentMessage> {
               title: const Text("Attach a File"),
               onTap: () {
                 Navigator.pop(context);
-
-                setState(() {
-                  messages.add({
-                    "text": "📎 Parent attached a file for excuse letter.",
-                    "isBot": false,
-                  });
-                });
-
+                ChatService.sendAttachmentMessage(
+                  "📎 Parent attached a file for excuse letter.",
+                );
                 scrollToBottom();
               },
             ),
@@ -87,14 +180,9 @@ class _ParentMessageState extends State<ParentMessage> {
               title: const Text("Select a Photo"),
               onTap: () {
                 Navigator.pop(context);
-
-                setState(() {
-                  messages.add({
-                    "text": "🖼️ Parent selected a photo as proof.",
-                    "isBot": false,
-                  });
-                });
-
+                ChatService.sendAttachmentMessage(
+                  "🖼️ Parent selected a photo as proof.",
+                );
                 scrollToBottom();
               },
             ),
@@ -105,7 +193,7 @@ class _ParentMessageState extends State<ParentMessage> {
   }
 
   void scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 150), () {
       if (scrollController.hasClients) {
         scrollController.animateTo(
           scrollController.position.maxScrollExtent,
@@ -116,41 +204,6 @@ class _ParentMessageState extends State<ParentMessage> {
     });
   }
 
-  Widget buildOptionButton(String text) {
-    return GestureDetector(
-      onTap: () => sendMessage(text),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 15,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.black,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget buildMessage(Map<String, dynamic> msg) {
     return Align(
       alignment: msg["isBot"] ? Alignment.centerLeft : Alignment.centerRight,
@@ -159,18 +212,12 @@ class _ParentMessageState extends State<ParentMessage> {
         margin: const EdgeInsets.symmetric(vertical: 5),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: msg["isBot"]
-              ? const Color.fromARGB(255, 255, 255, 255)
-              : const Color.fromARGB(255, 255, 255, 255),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Text(
           msg["text"],
-          style: TextStyle(
-            color: msg["isBot"]
-                ? const Color.fromARGB(255, 0, 0, 0)
-                : const Color.fromARGB(255, 0, 0, 0),
-          ),
+          style: const TextStyle(color: Colors.black),
         ),
       ),
     );
@@ -186,10 +233,7 @@ class _ParentMessageState extends State<ParentMessage> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
-              Icons.attach_file,
-              color: Color.fromARGB(255, 0, 0, 0),
-            ),
+            icon: const Icon(Icons.attach_file, color: Colors.black),
             onPressed: showAttachmentOptions,
           ),
           Expanded(
@@ -203,13 +247,8 @@ class _ParentMessageState extends State<ParentMessage> {
             ),
           ),
           IconButton(
-            icon: const Icon(
-              Icons.send,
-              color: Color.fromARGB(255, 0, 0, 0),
-            ),
-            onPressed: () {
-              sendMessage(controller.text);
-            },
+            icon: const Icon(Icons.send, color: Colors.black),
+            onPressed: () => sendMessage(controller.text),
           ),
         ],
       ),
@@ -217,35 +256,59 @@ class _ParentMessageState extends State<ParentMessage> {
   }
 
   @override
+  void dispose() {
+    controller.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       color: const Color.fromARGB(255, 128, 36, 36),
-      child: Column(
+      child: Stack(
         children: [
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              padding: const EdgeInsets.all(12),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return buildMessage(messages[index]);
-              },
-            ),
+          Column(
+            children: [
+              Expanded(
+                child: ValueListenableBuilder(
+                  valueListenable: ChatService.messages,
+                  builder: (context, chatMessages, _) {
+                    final messages =
+                        chatMessages.map((message) => message.toMap()).toList();
+
+                    scrollToBottom();
+
+                    return ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        return buildMessage(messages[index]);
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: buildChatBar(),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
+          Positioned(
+            right: 14,
+            bottom: 90,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: Colors.white,
+              elevation: 5,
+              onPressed: showFAQOptions,
+              child: const Icon(
+                Icons.question_answer,
+                color: Color.fromARGB(255, 128, 36, 36),
+              ),
             ),
-            child: Column(
-              children: quickOptions
-                  .map((option) => buildOptionButton(option))
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: buildChatBar(),
           ),
         ],
       ),

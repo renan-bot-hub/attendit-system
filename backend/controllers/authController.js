@@ -45,6 +45,10 @@ function publicUser(user) {
     teacherNumber: user.teacherNumber,
     birthdate: user.birthdate,
     contactNumber: user.contactNumber,
+    parentName: user.parentName,
+    parentEmail: user.parentEmail,
+    parentPhone: user.parentPhone,
+    isActive: user.isActive,
   };
 }
 
@@ -71,6 +75,11 @@ function mobileFields(body) {
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function isValidContactNumber(contactNumber) {
+  if (!contactNumber) return true;
+  return /^[0-9]{11}$/.test(contactNumber);
 }
 
 exports.signup = async (req, res) => {
@@ -111,6 +120,7 @@ exports.signup = async (req, res) => {
             "Bootstrap admin signup is disabled. Create the first admin through a controlled admin seed or database console.",
         });
       }
+
       finalRole = "admin";
     } else if (finalRole === "admin") {
       return res.status(403).json({
@@ -129,16 +139,22 @@ exports.signup = async (req, res) => {
     if (userCount !== 0 && !publicStaffSignupAllowed()) {
       return res.status(403).json({
         success: false,
-        message: "Public staff signup is disabled. Ask an administrator to create your account.",
+        message:
+          "Public staff signup is disabled. Ask an administrator to create your account.",
       });
     }
 
     const user = await User.create({
-      name,
+      name: name.trim(),
       email: normalizedEmail,
       password: await bcrypt.hash(password, 10),
       role: finalRole,
-      ...mobileFields(req.body),
+      isActive: true,
+      ...mobileFields({
+        ...req.body,
+        email: normalizedEmail,
+        role: finalRole,
+      }),
     });
 
     res.status(201).json({
@@ -151,7 +167,11 @@ exports.signup = async (req, res) => {
       user: publicUser(user),
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Signup error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -178,7 +198,8 @@ exports.register = async (req, res) => {
     if (!parentSelfRegistrationAllowed()) {
       return res.status(403).json({
         success: false,
-        message: "Parent self-registration is disabled. Ask the school office to create your account.",
+        message:
+          "Parent self-registration is disabled. Ask the school office to create your account.",
       });
     }
 
@@ -211,11 +232,16 @@ exports.register = async (req, res) => {
     }
 
     const user = await User.create({
-      name,
+      name: name.trim(),
       email: normalizedEmail,
       password: await bcrypt.hash(password, 10),
       role,
-      ...mobileFields(req.body),
+      isActive: true,
+      ...mobileFields({
+        ...req.body,
+        email: normalizedEmail,
+        role,
+      }),
     });
 
     res.status(201).json({
@@ -224,7 +250,11 @@ exports.register = async (req, res) => {
       user: publicUser(user),
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Register error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -266,7 +296,11 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -278,7 +312,79 @@ exports.login = async (req, res) => {
       user: publicUser(user),
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Login error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Please login again.",
+      });
+    }
+
+    const name = req.body.name?.trim();
+    const contactNumber = req.body.contactNumber?.trim() || "";
+    const birthdate = req.body.birthdate?.trim() || "";
+    const gradeSection = req.body.gradeSection?.trim() || "";
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Name is required",
+      });
+    }
+
+    if (!isValidContactNumber(contactNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Contact number must contain exactly 11 digits",
+      });
+    }
+
+    const updateData = {
+      name,
+      contactNumber,
+      birthdate,
+      gradeSection,
+      section: gradeSection,
+    };
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: publicUser(user),
+    });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -378,8 +484,13 @@ exports.verifyOTP = async (req, res) => {
     res.json({
       success: true,
       message: "OTP verified successfully",
+      user: publicUser(user),
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Verify OTP error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };

@@ -1302,28 +1302,69 @@ List<Attendance> attendanceRecords = _generateAttendanceRecords();
 List<Attendance> _generateAttendanceRecords() {
   final List<Attendance> records = [];
 
-  final statusesPattern = [
-    "Present",
-    "Absent",
-    "Late",
-    "Present",
-    "Present",
-    "Late",
-    "Absent",
-    "Present",
-    "Present",
-    "Present",
-  ];
+  final Map<String, List<String>> attendancePatterns = {
+    // LOW RISK: mostly present
+    "low": [
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Late",
+      "Absent",
+    ],
 
-  for (final student in students) {
+    // MODERATE RISK: mixed records
+    "moderate": [
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Present",
+      "Late",
+      "Late",
+      "Absent",
+      "Absent",
+      "Present",
+    ],
+
+    // HIGH RISK: many absent/late
+    "high": [
+      "Present",
+      "Present",
+      "Late",
+      "Late",
+      "Late",
+      "Absent",
+      "Absent",
+      "Absent",
+      "Present",
+      "Absent",
+    ],
+  };
+
+  for (int i = 0; i < students.length; i++) {
+    final student = students[i];
+
+    late final List<String> pattern;
+
+    if (i % 3 == 0) {
+      pattern = attendancePatterns["low"]!;
+    } else if (i % 3 == 1) {
+      pattern = attendancePatterns["moderate"]!;
+    } else {
+      pattern = attendancePatterns["high"]!;
+    }
+
     for (int day = 1; day <= 10; day++) {
-      final statusIndex = (day + student.id.hashCode.abs()) % statusesPattern.length;
-
       records.add(
         Attendance(
           studentId: student.id,
           date: "2025-01-${day.toString().padLeft(2, '0')}",
-          status: statusesPattern[statusIndex],
+          status: pattern[day - 1],
         ),
       );
     }
