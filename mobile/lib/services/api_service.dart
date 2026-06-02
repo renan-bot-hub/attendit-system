@@ -112,34 +112,52 @@ class ApiService {
       }
 
       final decoded = jsonDecode(response.body);
-
-      if (decoded is! Map<String, dynamic>) {
-        return {
-          'success': false,
-          'message': 'Invalid response format',
-          'statusCode': response.statusCode,
-          'raw': response.body,
-        };
-      }
-
       final bool isSuccessStatus =
           response.statusCode >= 200 && response.statusCode < 300;
 
       if (isSuccessStatus) {
+        if (decoded is Map<String, dynamic>) {
+          return {
+            'success': decoded['success'] ?? true,
+            'message':
+                decoded['message'] ?? decoded['msg'] ?? 'Request successful',
+            'data': decoded,
+            'statusCode': response.statusCode,
+          };
+        }
+
+        if (decoded is List) {
+          return {
+            'success': true,
+            'message': 'Request successful',
+            'data': decoded,
+            'statusCode': response.statusCode,
+          };
+        }
+
         return {
-          'success': decoded['success'] ?? true,
-          'message': decoded['message'] ?? decoded['msg'] ?? 'Request successful',
+          'success': true,
+          'message': 'Request successful',
           'data': decoded,
           'statusCode': response.statusCode,
         };
       }
 
+      if (decoded is Map<String, dynamic>) {
+        return {
+          'success': false,
+          'message': decoded['message'] ??
+              decoded['msg'] ??
+              decoded['error'] ??
+              'Server error (${response.statusCode})',
+          'statusCode': response.statusCode,
+          'data': decoded,
+        };
+      }
+
       return {
         'success': false,
-        'message': decoded['message'] ??
-            decoded['msg'] ??
-            decoded['error'] ??
-            'Server error (${response.statusCode})',
+        'message': 'Server error (${response.statusCode})',
         'statusCode': response.statusCode,
         'data': decoded,
       };
@@ -185,6 +203,16 @@ class ApiService {
     );
   }
 
+  static Future<Map<String, dynamic>> getParentAttendanceNotifications(
+  String token,
+) {
+  return _request(
+    method: 'GET',
+    endpoint: '/attendance/ledger',
+    token: token,
+  );
+}
+
   static Future<Map<String, dynamic>> updateProfile(
     String token,
     Map<String, dynamic> data,
@@ -204,22 +232,29 @@ class ApiService {
 
   static Future<Map<String, dynamic>> markAttendance(
     String token,
-    String qrCode,
-  ) {
+    String qrCode, {
+    String? sessionId,
+  }) {
     return _request(
       method: 'POST',
-      endpoint: '/attendance/mark',
+      endpoint: '/attendance/scan',
       token: token,
       body: {
         'qrCode': qrCode.trim(),
+        if (sessionId != null && sessionId.trim().isNotEmpty)
+          'sessionId': sessionId.trim(),
       },
     );
   }
 
   static Future<Map<String, dynamic>> getAttendance(String token) {
+    return getAttendanceLedger(token);
+  }
+
+  static Future<Map<String, dynamic>> getAttendanceLedger(String token) {
     return _request(
       method: 'GET',
-      endpoint: '/attendance',
+      endpoint: '/attendance/ledger',
       token: token,
     );
   }

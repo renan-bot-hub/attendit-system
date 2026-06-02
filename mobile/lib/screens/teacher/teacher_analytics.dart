@@ -1,15 +1,173 @@
 import 'package:flutter/material.dart';
 
 import '../../models/user_model.dart';
+import '../../services/api_service.dart';
 import '../../utils/mock_data.dart';
 
-class TeacherAnalytics extends StatelessWidget {
+class TeacherAnalytics extends StatefulWidget {
   final UserModel user;
 
   const TeacherAnalytics({
     super.key,
     required this.user,
   });
+
+  @override
+  State<TeacherAnalytics> createState() => _TeacherAnalyticsState();
+}
+
+class _TeacherAnalyticsRecord {
+  final String studentId;
+  final String studentName;
+  final String status;
+
+  _TeacherAnalyticsRecord({
+    required this.studentId,
+    required this.studentName,
+    required this.status,
+  });
+}
+
+class _StudentAnalyticsSummary {
+  final String studentId;
+  final String studentName;
+  final int present;
+  final int late;
+  final int absent;
+
+  _StudentAnalyticsSummary({
+    required this.studentId,
+    required this.studentName,
+    required this.present,
+    required this.late,
+    required this.absent,
+  });
+}
+
+class _TeacherAnalyticsState extends State<TeacherAnalytics> {
+  bool isLoading = true;
+  String errorMessage = "";
+
+  List<_StudentAnalyticsSummary> studentSummaries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnalyticsFromDatabase();
+  }
+
+  Future<void> _loadAnalyticsFromDatabase() async {
+    final token = widget.user.token;
+
+    if (token == null || token.trim().isEmpty) {
+      _loadFallbackMockData("Login session missing. Please log in again.");
+      return;
+    }
+
+    final response = await ApiService.getAttendanceLedger(token);
+
+    if (!mounted) return;
+
+    if (response["success"] != true) {
+      _loadFallbackMockData(
+        response["message"]?.toString() ?? "Failed to load attendance analytics.",
+      );
+      return;
+    }
+
+    final data = response["data"];
+
+    if (data is! List) {
+      _loadFallbackMockData("Invalid attendance data received from server.");
+      return;
+    }
+
+    final records = data
+        .whereType<Map<String, dynamic>>()
+        .map(_parseAttendanceRecord)
+        .whereType<_TeacherAnalyticsRecord>()
+        .toList();
+
+    final grouped = <String, List<_TeacherAnalyticsRecord>>{};
+
+    for (final record in records) {
+      grouped.putIfAbsent(record.studentId, () => []);
+      grouped[record.studentId]!.add(record);
+    }
+
+    final summaries = grouped.entries.map((entry) {
+      final studentRecords = entry.value;
+      final firstRecord = studentRecords.first;
+
+      return _StudentAnalyticsSummary(
+        studentId: firstRecord.studentId,
+        studentName: firstRecord.studentName,
+        present: studentRecords.where((r) => r.status == "Present").length,
+        late: studentRecords.where((r) => r.status == "Late").length,
+        absent: studentRecords.where((r) => r.status == "Absent").length,
+      );
+    }).toList()
+      ..sort((a, b) => a.studentName.compareTo(b.studentName));
+
+    setState(() {
+      studentSummaries = summaries;
+      errorMessage = "";
+      isLoading = false;
+    });
+  }
+
+  void _loadFallbackMockData(String message) {
+    final teacherStudents = findStudentsForTeacher(
+      teacherEmail: widget.user.email,
+    );
+
+    final summaries = teacherStudents.map((student) {
+      final records = attendanceRecords
+          .where((record) => record.studentId == student.id)
+          .toList();
+
+      return _StudentAnalyticsSummary(
+        studentId: student.id,
+        studentName: student.name,
+        present: records.where((r) => r.status == "Present").length,
+        late: records.where((r) => r.status == "Late").length,
+        absent: records.where((r) => r.status == "Absent").length,
+      );
+    }).toList();
+
+    setState(() {
+      studentSummaries = summaries;
+      errorMessage = message;
+      isLoading = false;
+    });
+  }
+
+  _TeacherAnalyticsRecord? _parseAttendanceRecord(Map<String, dynamic> json) {
+    try {
+      final studentData = json["studentId"];
+
+      String parsedStudentId = "";
+      String parsedStudentName = "Unknown Student";
+
+      if (studentData is Map<String, dynamic>) {
+        parsedStudentId =
+            studentData["_id"]?.toString() ?? studentData["id"]?.toString() ?? "";
+        parsedStudentName = studentData["name"]?.toString() ?? "Unknown Student";
+      } else {
+        parsedStudentId = studentData?.toString() ?? "";
+      }
+
+      final status = json["status"]?.toString() ?? "Present";
+
+      return _TeacherAnalyticsRecord(
+        studentId: parsedStudentId,
+        studentName: parsedStudentName,
+        status: status,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   Color _riskColor(String risk) {
     final value = risk.toLowerCase();
@@ -70,10 +228,6 @@ class TeacherAnalytics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final teacherStudents = findStudentsForTeacher(
-      teacherEmail: user.email,
-    );
-
     return Container(
       color: const Color.fromARGB(220, 255, 255, 255),
       padding: const EdgeInsets.all(16),
@@ -96,12 +250,39 @@ class TeacherAnalytics extends StatelessWidget {
               fontSize: 15,
             ),
           ),
-          const SizedBox(height: 25),
-          if (teacherStudents.isEmpty)
+          const SizedBox(height: 16),
+          if (errorMessage.isNotEmpty)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.orange),
+              ),
+              child: Text(
+                errorMessage,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          if (isLoading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Color.fromARGB(255, 134, 32, 32),
+                ),
+              ),
+            )
+          else if (studentSummaries.isEmpty)
             Expanded(
               child: Center(
                 child: Text(
-                  "No students linked to ${user.email}.",
+                  "No students or attendance records found for ${widget.user.email}.",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.black,
@@ -114,21 +295,15 @@ class TeacherAnalytics extends StatelessWidget {
           else
             Expanded(
               child: ListView.builder(
-                itemCount: teacherStudents.length,
+                itemCount: studentSummaries.length,
                 itemBuilder: (context, index) {
-                  final student = teacherStudents[index];
+                  final student = studentSummaries[index];
 
-                  final records = attendanceRecords
-                      .where((r) => r.studentId == student.id)
-                      .toList();
+                  final present = student.present;
+                  final absent = student.absent;
+                  final late = student.late;
 
-                  final present =
-                      records.where((r) => r.status == "Present").length;
-                  final absent =
-                      records.where((r) => r.status == "Absent").length;
-                  final late = records.where((r) => r.status == "Late").length;
-
-                  final total = records.length;
+                  final total = present + absent + late;
                   final score = (present * 1.0) + (late * 0.5);
                   final rate = total == 0 ? 0 : (score / total) * 100;
 
@@ -178,7 +353,7 @@ class TeacherAnalytics extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    student.name,
+                                    student.studentName,
                                     style: const TextStyle(
                                       color: Colors.black,
                                       fontSize: 18,

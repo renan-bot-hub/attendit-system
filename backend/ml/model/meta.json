@@ -14,18 +14,174 @@
     "High Risk",
     "Critical"
   ],
-  "trainedAt": "2026-05-16T04:49:01.090Z",
+  "trainedAt": "2026-06-02T18:27:04.495Z",
   "dataSource": "synthetic-demo",
   "productionReady": false,
-  "note": "This checked-in model is usable for system demos only. Retrain with anonymized historical school attendance data before claiming production AI accuracy.",
-  "valLoss": 0.1260092407464981,
-  "valAcc": 0.9649999737739563,
+  "dataStats": {
+    "rowCount": 6000,
+    "sampleCount": 6000,
+    "labelDistribution": {
+      "Low Risk": 1461,
+      "Medium Risk": 1432,
+      "High Risk": 927,
+      "Critical": 2180
+    },
+    "identifiersHashed": false
+  },
+  "split": {
+    "train": 4200,
+    "validation": 900,
+    "test": 900
+  },
+  "trainingParameters": {
+    "epochs": 60,
+    "batchSize": 64,
+    "optimizer": "adam",
+    "learningRate": 0.003,
+    "architecture": [
+      "dense:64:relu",
+      "dropout:0.25",
+      "dense:32:relu",
+      "dropout:0.15",
+      "dense:16:relu",
+      "dense:4:softmax"
+    ]
+  },
+  "metrics": {
+    "validation": {
+      "accuracy": 0.9778,
+      "macroF1": 0.9756,
+      "macroAuc": 0.9979,
+      "perClass": [
+        {
+          "tier": "Low Risk",
+          "precision": 0.9826,
+          "recall": 0.9869,
+          "f1": 0.9847,
+          "auc": 0.9993
+        },
+        {
+          "tier": "Medium Risk",
+          "precision": 0.9769,
+          "recall": 0.9814,
+          "f1": 0.9791,
+          "auc": 0.9981
+        },
+        {
+          "tier": "High Risk",
+          "precision": 0.9286,
+          "recall": 0.9862,
+          "f1": 0.9565,
+          "auc": 0.9958
+        },
+        {
+          "tier": "Critical",
+          "precision": 1,
+          "recall": 0.9646,
+          "f1": 0.982,
+          "auc": 0.9985
+        }
+      ],
+      "confusionMatrix": [
+        [
+          226,
+          3,
+          0,
+          0
+        ],
+        [
+          4,
+          211,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          143,
+          0
+        ],
+        [
+          0,
+          0,
+          11,
+          300
+        ]
+      ]
+    },
+    "test": {
+      "accuracy": 0.9678,
+      "macroF1": 0.9608,
+      "macroAuc": 0.9957,
+      "perClass": [
+        {
+          "tier": "Low Risk",
+          "precision": 0.9633,
+          "recall": 0.9906,
+          "f1": 0.9767,
+          "auc": 0.9968
+        },
+        {
+          "tier": "Medium Risk",
+          "precision": 0.9838,
+          "recall": 0.9681,
+          "f1": 0.9759,
+          "auc": 0.995
+        },
+        {
+          "tier": "High Risk",
+          "precision": 0.875,
+          "recall": 0.9633,
+          "f1": 0.917,
+          "auc": 0.9926
+        },
+        {
+          "tier": "Critical",
+          "precision": 0.9937,
+          "recall": 0.9543,
+          "f1": 0.9736,
+          "auc": 0.9984
+        }
+      ],
+      "confusionMatrix": [
+        [
+          210,
+          2,
+          0,
+          0
+        ],
+        [
+          8,
+          243,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          105,
+          2
+        ],
+        [
+          0,
+          0,
+          15,
+          313
+        ]
+      ]
+    }
+  },
+  "privacy": {
+    "identifiersHashed": false,
+    "sensitiveColumnsExcluded": [],
+    "rawStudentIdentifiersStoredInModel": false
+  },
   "fallback": {
     "enabled": true,
-    "description": "The AI alert controller falls back to rule-based scoring if TensorFlow inference is unavailable."
+    "description": "aiAlertController falls back to rule-based scoring if TensorFlow inference is unavailable or input data is incomplete."
   },
   "history": {
-    "lossLast": 0.1296250820159912,
-    "accLast": 0.9645833373069763
+    "lossLast": 0.12282861769199371,
+    "accuracyLast": 0.9654761552810669
   }
 }

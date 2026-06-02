@@ -36,7 +36,7 @@ router.post('/manual',        auth, requireRoles('admin', 'teacher', 'staff'), v
     },
   },
 }), submitManual);
-router.post('/scan',          auth, validateAttendanceScanBody, scanQR);
+router.post('/scan',          auth, scanQR);
 router.get('/ledger',         auth, getLedger);
 router.get('/risk-analysis',  auth, requireRoles('admin', 'teacher', 'staff'), getRiskAnalysis);
 router.get('/summary',        auth, requireRoles('admin', 'teacher', 'staff'), getSummary);

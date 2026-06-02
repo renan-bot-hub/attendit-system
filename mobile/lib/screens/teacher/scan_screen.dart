@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../utils/mock_data.dart';
+
 import '../../models/user_model.dart';
+import '../../services/api_service.dart';
 
 class ScanScreen extends StatefulWidget {
   final UserModel user;
@@ -22,37 +23,9 @@ class _ScanScreenState extends State<ScanScreen> {
       isProcessing = true;
     });
 
-    try {
-      final student = students.firstWhere(
-        (s) => s.id == qrCode,
-      );
+    final token = widget.user.token;
 
-      addAttendance(student.id);
-
-      if (!mounted) return;
-
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("Attendance Recorded"),
-          content: Text(
-            "${student.name} marked PRESENT successfully.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-
-                setState(() {
-                  isProcessing = false;
-                });
-              },
-              child: const Text("OK"),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
+    if (token == null || token.trim().isEmpty) {
       setState(() {
         isProcessing = false;
       });
@@ -60,21 +33,44 @@ class _ScanScreenState extends State<ScanScreen> {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text("Invalid QR"),
-          content: const Text(
-            "Student record not found.",
-          ),
+          title: const Text("Login Required"),
+          content: const Text("Your login session is missing. Please log in again."),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               child: const Text("OK"),
             ),
           ],
         ),
       );
+      return;
     }
+
+    final response = await ApiService.markAttendance(token, qrCode);
+
+    if (!mounted) return;
+
+    setState(() {
+      isProcessing = false;
+    });
+
+    final bool success = response['success'] == true;
+    final String message = response['message']?.toString() ??
+        (success ? "Attendance recorded successfully." : "Unable to record attendance.");
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(success ? "Attendance Recorded" : "Scan Failed"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -96,7 +92,7 @@ class _ScanScreenState extends State<ScanScreen> {
               final barcode = capture.barcodes.first;
               final String? code = barcode.rawValue;
 
-              if (code != null) {
+              if (code != null && code.trim().isNotEmpty) {
                 handleScan(code);
               }
             },
@@ -116,7 +112,6 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
           ),
 
-          // LOADING
           if (isProcessing)
             Container(
               color: Colors.black54,

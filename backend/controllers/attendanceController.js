@@ -237,37 +237,116 @@ exports.scanQR = async (req, res) => {
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       targetSessionId = decoded.sessionId;
+
       student = await resolveTokenScanStudent(req);
+
       if (!student) {
-        return res.status(403).json({ message: 'No linked student found for this scan.' });
+        return res.status(403).json({
+          success: false,
+          message: 'No linked student found for this scan.',
+        });
       }
-    } else if (qrCode && sessionId) {
-      if (!canManageSession(req.user, { teacherId: req.user.id }) && !['admin', 'staff', 'teacher'].includes(req.user.role)) {
-        return res.status(403).json({ message: 'Unauthorized' });
+    } else if (qrCode) {
+      if (!['admin', 'staff', 'teacher'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only admin, staff, or teacher can scan attendance.',
+        });
       }
 
-      student = await User.findOne({ qrCode, role: 'student', isActive: true });
-      if (!student) return res.status(404).json({ message: 'Student QR not found' });
+      student = await loadStudentByIdentifier(qrCode);
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: 'Student QR not found.',
+        });
+      }
+
+      if (!targetSessionId) {
+        const activeSessionFilter = {
+          active: true,
+        };
+
+        if (req.user.role === 'teacher') {
+          activeSessionFilter.teacherId = req.user.id;
+        }
+
+        const activeSession = await Session.findOne(activeSessionFilter).sort({
+          createdAt: -1,
+        });
+
+        if (!activeSession) {
+          return res.status(400).json({
+            success: false,
+            message:
+              'No active attendance session found. Please start or activate a session first.',
+          });
+        }
+
+        targetSessionId = activeSession._id;
+      }
     } else {
-      return res.status(400).json({ message: 'Invalid QR payload' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid QR payload.',
+      });
     }
 
     if (!targetSessionId || !isValidObjectId(targetSessionId)) {
-      return res.status(400).json({ message: 'Invalid sessionId' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid sessionId.',
+      });
     }
 
     const session = await Session.findById(targetSessionId);
-    if (!session) return res.status(404).json({ message: 'Session not found' });
-    if (!session.active) return res.status(400).json({ message: 'Session is not active' });
-    if (!sameSection(session, student)) {
-      return res.status(400).json({ message: 'Student does not belong to this session section' });
-    }
-    if (req.user.role === 'teacher' && !token && !canManageSession(req.user, session)) {
-      return res.status(403).json({ message: 'You can only scan attendance for your sessions.' });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found.',
+      });
     }
 
-    const exists = await Attendance.findOne({ studentId: student._id, sessionId: targetSessionId });
-    if (exists) return res.json({ message: 'Already recorded' });
+    if (!session.active) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session is not active.',
+      });
+    }
+
+    if (!sameSection(session, student)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student does not belong to this session section.',
+      });
+    }
+
+    if (req.user.role === 'teacher' && !token && !canManageSession(req.user, session)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only scan attendance for your sessions.',
+      });
+    }
+
+    const exists = await Attendance.findOne({
+      studentId: student._id,
+      sessionId: targetSessionId,
+    });
+
+    if (exists) {
+      return res.json({
+        success: true,
+        message: `${student.name} attendance is already recorded.`,
+        student: {
+          id: student._id,
+          name: student.name,
+          studentId: student.studentId,
+          section: student.section,
+        },
+      });
+    }
 
     await Attendance.create({
       studentId: student._id,
@@ -281,10 +360,28 @@ exports.scanQR = async (req, res) => {
       timestamp: new Date(),
     });
 
-    res.json({ message: 'Attendance recorded' });
+    return res.json({
+      success: true,
+      message: `${student.name} marked PRESENT successfully.`,
+      student: {
+        id: student._id,
+        name: student.name,
+        studentId: student.studentId,
+        section: student.section,
+      },
+    });
   } catch (err) {
-    if (err?.code === 11000) return res.json({ message: 'Already recorded' });
-    res.status(err.status || 400).json({ message: err.message || 'Invalid QR' });
+    if (err?.code === 11000) {
+      return res.json({
+        success: true,
+        message: 'Attendance is already recorded.',
+      });
+    }
+
+    return res.status(err.status || 400).json({
+      success: false,
+      message: err.message || 'Invalid QR.',
+    });
   }
 };
 

@@ -16,10 +16,32 @@ class ParentHome extends StatefulWidget {
   State<ParentHome> createState() => _ParentHomeState();
 }
 
+class _ParentAttendanceRecord {
+  final String studentId;
+  final String studentName;
+  final String date;
+  final DateTime rawDate;
+  final String status;
+
+  _ParentAttendanceRecord({
+    required this.studentId,
+    required this.studentName,
+    required this.date,
+    required this.rawDate,
+    required this.status,
+  });
+}
+
 class _ParentHomeState extends State<ParentHome> {
   static const Color maroon = Color.fromARGB(255, 128, 36, 36);
 
+  bool isLoadingRecords = true;
   bool isLoadingAI = true;
+
+  String studentName = "Student";
+  String recordsError = "";
+
+  List<_ParentAttendanceRecord> records = [];
 
   String aiRiskLevel = "";
   String aiAttendanceRate = "";
@@ -29,10 +51,67 @@ class _ParentHomeState extends State<ParentHome> {
   @override
   void initState() {
     super.initState();
-    _loadAIPrescription();
+    _loadAttendanceFromDatabase();
   }
 
-  Future<void> _loadAIPrescription() async {
+  Future<void> _loadAttendanceFromDatabase() async {
+    final token = widget.user.token;
+
+    if (token == null || token.trim().isEmpty) {
+      _loadFallbackMockData("Login session missing. Please log in again.");
+      return;
+    }
+
+    final response = await ApiService.getAttendanceLedger(token);
+
+    if (!mounted) return;
+
+    if (response["success"] != true) {
+      _loadFallbackMockData(
+        response["message"]?.toString() ?? "Failed to load attendance records.",
+      );
+      return;
+    }
+
+    final data = response["data"];
+
+    if (data is! List) {
+      _loadFallbackMockData("Invalid attendance data received from server.");
+      return;
+    }
+
+    final loadedRecords = data
+        .whereType<Map<String, dynamic>>()
+        .map(_parseAttendanceRecord)
+        .whereType<_ParentAttendanceRecord>()
+        .toList()
+      ..sort((a, b) => b.rawDate.compareTo(a.rawDate));
+
+    if (loadedRecords.isNotEmpty) {
+      studentName = loadedRecords.first.studentName;
+    } else {
+      final fallbackStudent = findStudentForParent(
+        parentEmail: widget.user.email,
+        parentId: widget.user.parentId ?? widget.user.id,
+        studentId: widget.user.studentId,
+        parentName: widget.user.name,
+      );
+
+      if (fallbackStudent != null) {
+        studentName = fallbackStudent.name;
+      }
+    }
+
+    setState(() {
+      records = loadedRecords;
+      recordsError = "";
+      isLoadingRecords = false;
+    });
+
+    await _loadAIPrescription();
+  }
+
+  void _loadFallbackMockData(String errorMessage) {
     final student = findStudentForParent(
       parentEmail: widget.user.email,
       parentId: widget.user.parentId ?? widget.user.id,
@@ -41,19 +120,82 @@ class _ParentHomeState extends State<ParentHome> {
     );
 
     if (student == null) {
-      if (!mounted) return;
       setState(() {
+        records = [];
+        studentName = "Student";
+        recordsError = errorMessage;
+        isLoadingRecords = false;
         isLoadingAI = false;
         aiError = "No student record found for AI analysis.";
       });
       return;
     }
 
-    final records = attendanceRecords
+    final fallbackRecords = attendanceRecords
         .where((record) => record.studentId == student.id)
-        .toList();
+        .map(
+          (record) => _ParentAttendanceRecord(
+            studentId: record.studentId,
+            studentName: student.name,
+            date: record.date,
+            rawDate: DateTime.tryParse(record.date) ?? DateTime.now(),
+            status: record.status,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.rawDate.compareTo(a.rawDate));
 
-    final present = records.where((record) => record.status == "Present").length;
+    setState(() {
+      records = fallbackRecords;
+      studentName = student.name;
+      recordsError = errorMessage;
+      isLoadingRecords = false;
+    });
+
+    _loadAIPrescription();
+  }
+
+  _ParentAttendanceRecord? _parseAttendanceRecord(Map<String, dynamic> json) {
+    try {
+      final studentData = json["studentId"];
+
+      String parsedStudentId = "";
+      String parsedStudentName = "Student";
+
+      if (studentData is Map<String, dynamic>) {
+        parsedStudentId =
+            studentData["_id"]?.toString() ?? studentData["id"]?.toString() ?? "";
+        parsedStudentName = studentData["name"]?.toString() ?? "Student";
+      } else {
+        parsedStudentId = studentData?.toString() ?? "";
+      }
+
+      final status = json["status"]?.toString() ?? "Present";
+
+      final timestampText = json["timestamp"]?.toString() ??
+          json["createdAt"]?.toString() ??
+          DateTime.now().toIso8601String();
+
+      final rawDate = DateTime.tryParse(timestampText) ?? DateTime.now();
+
+      final dateLabel =
+          "${rawDate.year}-${rawDate.month.toString().padLeft(2, '0')}-${rawDate.day.toString().padLeft(2, '0')}";
+
+      return _ParentAttendanceRecord(
+        studentId: parsedStudentId,
+        studentName: parsedStudentName,
+        date: dateLabel,
+        rawDate: rawDate,
+        status: status,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _loadAIPrescription() async {
+    final present =
+        records.where((record) => record.status == "Present").length;
     final late = records.where((record) => record.status == "Late").length;
     final absent = records.where((record) => record.status == "Absent").length;
 
@@ -134,33 +276,16 @@ class _ParentHomeState extends State<ParentHome> {
 
   @override
   Widget build(BuildContext context) {
-    final student = findStudentForParent(
-      parentEmail: widget.user.email,
-      parentId: widget.user.parentId ?? widget.user.id,
-      studentId: widget.user.studentId,
-      parentName: widget.user.name,
-    );
-
-    if (student == null) {
+    if (isLoadingRecords) {
       return const Center(
-        child: Text(
-          "No student record linked to this parent account.",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+        child: CircularProgressIndicator(
+          color: maroon,
         ),
       );
     }
 
-    final records = attendanceRecords
-        .where((record) => record.studentId == student.id)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
-
-    final present = records.where((record) => record.status == "Present").length;
+    final present =
+        records.where((record) => record.status == "Present").length;
     final late = records.where((record) => record.status == "Late").length;
     final absent = records.where((record) => record.status == "Absent").length;
 
@@ -173,8 +298,8 @@ class _ParentHomeState extends State<ParentHome> {
 
     int absentStreak = 0;
 
-    final sortedRecords = List.from(records)
-      ..sort((a, b) => a.date.compareTo(b.date));
+    final sortedRecords = List<_ParentAttendanceRecord>.from(records)
+      ..sort((a, b) => a.rawDate.compareTo(b.rawDate));
 
     for (final record in sortedRecords) {
       if (record.status == "Absent") {
@@ -208,17 +333,19 @@ class _ParentHomeState extends State<ParentHome> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (recordsError.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildWarningCard(recordsError),
+            ),
           _buildWelcomeCard(
             parentName: widget.user.name ?? "Parent",
-            studentName: student.name,
+            studentName: studentName,
             riskLevel: riskLevel,
             riskColor: riskColor,
           ),
-
           const SizedBox(height: 18),
-
           _buildSectionTitle("Attendance Overview"),
-
           Row(
             children: [
               Expanded(
@@ -249,20 +376,15 @@ class _ParentHomeState extends State<ParentHome> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           _buildPerformanceCard(
             percentage: percentage,
             riskLevel: riskLevel,
             riskColor: riskColor,
             totalDays: total,
           ),
-
           const SizedBox(height: 18),
-
           _buildSectionTitle("AI Attendance Insight"),
-
           _buildAIPrescriptionCard(
             fallbackText: _fallbackRecommendation(
               percentage: percentage,
@@ -271,11 +393,8 @@ class _ParentHomeState extends State<ParentHome> {
             ),
             fallbackColor: riskColor,
           ),
-
           const SizedBox(height: 18),
-
           _buildSectionTitle("Recent Attendance Records"),
-
           if (latestRecords.isEmpty)
             _buildEmptyRecordCard()
           else
@@ -289,6 +408,26 @@ class _ParentHomeState extends State<ParentHome> {
               );
             }),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWarningCard(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.orange),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
