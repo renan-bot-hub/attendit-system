@@ -12,184 +12,27 @@ class _ParentMessageState extends State<ParentMessage> {
   final TextEditingController controller = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
-  final List<String> allQuickOptions = [
-    "Get Started",
-    "Homeroom Schedule",
-    "Rules for Monitoring",
-    "Talk To The Adviser",
-    "Justify Absence",
-  ];
-
-  final Set<String> selectedOptions = {};
-
-  List<String> get availableQuickOptions {
-    return allQuickOptions.where((option) {
-      return !selectedOptions.contains(option);
-    }).toList();
-  }
+  static const Color maroon = Color.fromARGB(255, 128, 36, 36);
 
   void sendMessage(String text) {
-    ChatService.sendParentMessage(text);
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return;
+
+    if (ChatService.isParentLocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Please wait for the teacher to start or reopen the conversation first.",
+          ),
+          backgroundColor: maroon,
+        ),
+      );
+      return;
+    }
+
+    ChatService.sendParentMessage(cleanText);
     controller.clear();
     scrollToBottom();
-  }
-
-  void sendOption(String text) {
-    Navigator.pop(context);
-
-    setState(() {
-      selectedOptions.add(text);
-    });
-
-    ChatService.sendParentMessage(text, isOption: true);
-    scrollToBottom();
-  }
-
-  void showFAQOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) {
-        final options = availableQuickOptions;
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 45,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 15),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              const Row(
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    color: Color.fromARGB(255, 128, 36, 36),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    "Frequently Asked Questions",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 15),
-
-              if (options.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 245, 245, 245),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Text(
-                    "You already selected all FAQ choices.",
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                )
-              else
-                ...options.map((option) {
-                  return GestureDetector(
-                    onTap: () => sendOption(option),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 13,
-                        horizontal: 15,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 245, 245, 245),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: const Color.fromARGB(255, 128, 36, 36),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.help_outline,
-                            color: Color.fromARGB(255, 128, 36, 36),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              option,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 15,
-                            color: Colors.black54,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void showAttachmentOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.attach_file),
-              title: const Text("Attach a File"),
-              onTap: () {
-                Navigator.pop(context);
-                ChatService.sendAttachmentMessage(
-                  "📎 Parent attached a file for excuse letter.",
-                );
-                scrollToBottom();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.image),
-              title: const Text("Select a Photo"),
-              onTap: () {
-                Navigator.pop(context);
-                ChatService.sendAttachmentMessage(
-                  "🖼️ Parent selected a photo as proof.",
-                );
-                scrollToBottom();
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void scrollToBottom() {
@@ -204,51 +47,80 @@ class _ParentMessageState extends State<ParentMessage> {
     });
   }
 
-  Widget buildMessage(Map<String, dynamic> msg) {
-    return Align(
-      alignment: msg["isBot"] ? Alignment.centerLeft : Alignment.centerRight,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 280),
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-        ),
+  Widget buildLockedState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
         child: Text(
-          msg["text"],
-          style: const TextStyle(color: Colors.black),
+          "Conversation Locked\n\nParents cannot send the first message. Please wait for the teacher to start the conversation.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            height: 1.5,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 
-  Widget buildChatBar() {
+  Widget buildMessage(Map<String, dynamic> msg) {
+    if (msg["teacherOnly"] == true) return const SizedBox.shrink();
+
+    final bool isTeacher = msg["isTeacher"] == true;
+
+    return Align(
+      alignment: isTeacher ? Alignment.centerLeft : Alignment.centerRight,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 280),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isTeacher ? Colors.white : const Color(0xFFFFEDED),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Text(
+          isTeacher ? "Teacher: ${msg["text"]}" : msg["text"] ?? "",
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildChatBar(bool isEnabled) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.attach_file, color: Colors.black),
-            onPressed: showAttachmentOptions,
-          ),
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                hintText: "Type your message...",
+              enabled: isEnabled,
+              decoration: InputDecoration(
+                hintText: isEnabled
+                    ? "Type your reply..."
+                    : "Waiting for teacher message...",
                 border: InputBorder.none,
               ),
-              onSubmitted: sendMessage,
+              onSubmitted: isEnabled ? sendMessage : null,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.send, color: Colors.black),
-            onPressed: () => sendMessage(controller.text),
+            icon: Icon(
+              Icons.send,
+              color: isEnabled ? maroon : Colors.black26,
+            ),
+            onPressed:
+                isEnabled ? () => sendMessage(controller.text) : null,
           ),
         ],
       ),
@@ -265,52 +137,40 @@ class _ParentMessageState extends State<ParentMessage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color.fromARGB(255, 128, 36, 36),
-      child: Stack(
-        children: [
-          Column(
+      color: maroon,
+      child: ValueListenableBuilder(
+        valueListenable: ChatService.messages,
+        builder: (context, chatMessages, _) {
+          final messages = chatMessages
+              .map((message) => message.toMap())
+              .where((msg) => msg["teacherOnly"] != true)
+              .toList();
+
+          final bool isEnabled = !ChatService.isParentLocked;
+
+          if (messages.isNotEmpty) scrollToBottom();
+
+          return Column(
             children: [
               Expanded(
-                child: ValueListenableBuilder(
-                  valueListenable: ChatService.messages,
-                  builder: (context, chatMessages, _) {
-                    final messages =
-                        chatMessages.map((message) => message.toMap()).toList();
-
-                    scrollToBottom();
-
-                    return ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(12),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        return buildMessage(messages[index]);
-                      },
-                    );
-                  },
-                ),
+                child: messages.isEmpty
+                    ? buildLockedState()
+                    : ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(12),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          return buildMessage(messages[index]);
+                        },
+                      ),
               ),
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: buildChatBar(),
+                child: buildChatBar(isEnabled),
               ),
             ],
-          ),
-          Positioned(
-            right: 14,
-            bottom: 90,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: Colors.white,
-              elevation: 5,
-              onPressed: showFAQOptions,
-              child: const Icon(
-                Icons.question_answer,
-                color: Color.fromARGB(255, 128, 36, 36),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

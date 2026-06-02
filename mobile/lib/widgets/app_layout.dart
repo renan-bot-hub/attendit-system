@@ -5,9 +5,8 @@ import '../screens/auth/login_screen.dart';
 
 import '../screens/parent/parent_profile.dart';
 import '../screens/parent/parent_home.dart';
-import '../screens/parent/parent_attendance.dart';
-import '../screens/parent/parent_analytics.dart';
-import '../screens/parent/parent_message.dart';
+import '../screens/parent/parent_faqs.dart';
+import '../screens/parent/parent_message.dart'; 
 import '../screens/parent/parent_alert.dart';
 
 import '../screens/teacher/teacher_home.dart';
@@ -32,6 +31,8 @@ class _AppLayoutState extends State<AppLayout> {
   int _selectedIndex = 0;
   late UserModel user;
 
+  static const Color maroon = Color.fromARGB(255, 128, 36, 36);
+
   String get _role => user.role.toLowerCase().trim();
 
   @override
@@ -40,66 +41,79 @@ class _AppLayoutState extends State<AppLayout> {
     user = widget.user;
   }
 
+  bool get _isParent => _role == "parent";
+  bool get _isTeacher => _role == "teacher";
+
   String get _title {
-    switch (_selectedIndex) {
-      case 0:
-        return "Home";
-      case 1:
-        return "Attendance";
-      case 2:
-        return "Analytics";
-      case 3:
-        return "Messages";
-      default:
-        return "AttendIT";
+    if (_isParent) {
+      switch (_selectedIndex) {
+        case 0:
+          return "Home";
+        case 1:
+          return "FAQS";
+        case 2:
+          return "Messages";
+        default:
+          return "AttendIT";
+      }
     }
+
+    if (_isTeacher) {
+      switch (_selectedIndex) {
+        case 0:
+          return "Home";
+        case 1:
+          return "Attendance";
+        case 2:
+          return "Analytics";
+        case 3:
+          return "Messages";
+        default:
+          return "AttendIT";
+      }
+    }
+
+    return "AttendIT";
   }
 
   Widget _getScreen() {
-    if (_role == "parent") {
-      switch (_selectedIndex) {
-        case 0:
-          return ParentHome(user: user);
-        case 1:
-          return ParentAttendance(user: user);
-        case 2:
-          return ParentAnalytics(user: user);
-        case 3:
-          return const ParentMessage();
-        default:
-          return ParentHome(user: user);
-      }
+  if (_isParent) {
+    switch (_selectedIndex) {
+      case 0:
+        return ParentHome(user: user);
+      case 1:
+        return const ParentFaqs();
+      case 2:
+        return const ParentMessage();
+      default:
+        return ParentHome(user: user);
     }
-
-    if (_role == "teacher") {
-      switch (_selectedIndex) {
-        case 0:
-          return TeacherHome(user: user);
-        case 1:
-          return TeacherAttendance(user: user);
-        case 2:
-          return TeacherAnalytics(user: user);
-        case 3:
-          return const TeacherMessage();
-        default:
-          return TeacherHome(user: user);
-      }
-    }
-
-    return const Center(
-      child: Text(
-        "Unknown User Role",
-        style: TextStyle(
-          color: Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
   }
 
+  if (_isTeacher) {
+    switch (_selectedIndex) {
+      case 0:
+        return TeacherHome(user: user);
+      case 1:
+        return TeacherAttendance(user: user);
+      case 2:
+        return TeacherAnalytics(user: user);
+      case 3:
+        return const TeacherMessage();
+      default:
+        return TeacherHome(user: user);
+    }
+  }
+
+  return const Center(
+    child: Text("Unknown User Role"),
+  );
+}
+
   void _onTap(int index) {
-    if (index == 4) {
+    final logoutIndex = _isParent ? 3 : 4;
+
+    if (index == logoutIndex) {
       _showLogoutDialog();
       return;
     }
@@ -119,16 +133,12 @@ class _AppLayoutState extends State<AppLayout> {
           ),
           title: const Text(
             "Logout",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: const Text("Are you sure you want to logout?"),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text("Cancel"),
             ),
             TextButton(
@@ -160,7 +170,7 @@ class _AppLayoutState extends State<AppLayout> {
   }
 
   void _openNotifications() {
-    if (_role == "parent") {
+    if (_isParent) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -170,14 +180,13 @@ class _AppLayoutState extends State<AppLayout> {
       return;
     }
 
-    if (_role == "teacher") {
+    if (_isTeacher) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => const TeacherAlert(),
         ),
       );
-      return;
     }
   }
 
@@ -198,12 +207,59 @@ class _AppLayoutState extends State<AppLayout> {
     }
   }
 
+  List<BottomNavigationBarItem> get _navigationItems {
+    if (_isParent) {
+      return const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: "Home",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.help_outline),
+          label: "FAQS",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat),
+          label: "Message",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.logout),
+          label: "Logout",
+        ),
+      ];
+    }
+
+    return const [
+      BottomNavigationBarItem(
+        icon: Icon(Icons.home),
+        label: "Home",
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.fact_check),
+        label: "Attendance",
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.bar_chart),
+        label: "Analytics",
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.chat),
+        label: "Messages",
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.logout),
+        label: "Logout",
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 128, 36, 36),
+        backgroundColor: maroon,
         elevation: 0,
         centerTitle: true,
         foregroundColor: Colors.white,
@@ -231,14 +287,16 @@ class _AppLayoutState extends State<AppLayout> {
           ),
         ],
       ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(15),
           child: _getScreen(),
         ),
       ),
+
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color.fromARGB(255, 128, 36, 36),
+        backgroundColor: maroon,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
@@ -246,28 +304,7 @@ class _AppLayoutState extends State<AppLayout> {
         unselectedFontSize: 11,
         currentIndex: _selectedIndex,
         onTap: _onTap,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fact_check),
-            label: "Attendance",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: "Analytics",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: "Messages",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.logout),
-            label: "Logout",
-          ),
-        ],
+        items: _navigationItems,
       ),
     );
   }

@@ -12,8 +12,23 @@ class _TeacherMessageState extends State<TeacherMessage> {
   final TextEditingController controller = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
+  static const Color maroon = Color.fromARGB(255, 128, 36, 36);
+
+  bool _isTeacherMessage(Map<String, dynamic> msg) {
+    final role = (msg["role"] ?? msg["senderRole"] ?? msg["sender"] ?? "")
+        .toString()
+        .toLowerCase()
+        .trim();
+
+    return role == "teacher" || msg["isTeacher"] == true;
+  }
+
   void sendMessage(String text) {
-    ChatService.sendTeacherMessage(text);
+    final cleanText = text.trim();
+
+    if (cleanText.isEmpty) return;
+
+    ChatService.sendTeacherMessage(cleanText);
     controller.clear();
     scrollToBottom();
   }
@@ -30,37 +45,130 @@ class _TeacherMessageState extends State<TeacherMessage> {
     });
   }
 
+  Widget buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: maroon.withOpacity(0.18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.forum_outlined,
+                size: 58,
+                color: maroon,
+              ),
+              SizedBox(height: 14),
+              Text(
+                "Start a Conversation",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: maroon,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                "Parents cannot send the first message. As the teacher, you may start the conversation so the parent can reply.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildHeaderNotice() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: maroon.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: maroon.withOpacity(0.18),
+        ),
+      ),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.verified_user_outlined,
+            color: maroon,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Teacher access: You are allowed to send the first message to start the conversation with the parent.",
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget buildMessage(Map<String, dynamic> msg) {
-    final bool isBot = msg["isBot"] == true;
-    final bool isOption = msg["isOption"] == true;
+    final bool isTeacher = _isTeacherMessage(msg);
 
     return Align(
-      alignment: isBot ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isTeacher ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        padding: const EdgeInsets.all(12),
-        constraints: const BoxConstraints(maxWidth: 300),
+        constraints: const BoxConstraints(maxWidth: 285),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 14,
+        ),
         decoration: BoxDecoration(
-          color: isOption
-              ? Colors.white70
-              : isBot
-                  ? Colors.white
-                  : const Color(0xFFBDA4A4),
-          borderRadius: BorderRadius.circular(15),
+          color: isTeacher ? maroon : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isTeacher ? 16 : 4),
+            bottomRight: Radius.circular(isTeacher ? 4 : 16),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Text(
-          msg["text"],
+          msg["text"] ?? "",
           style: TextStyle(
-            color: isBot || isOption ? Colors.black : Colors.white,
-            fontSize: 15,
-            fontStyle: isOption ? FontStyle.italic : FontStyle.normal,
+            color: isTeacher ? Colors.white : Colors.black87,
+            fontSize: 14,
+            height: 1.4,
           ),
         ),
       ),
@@ -69,43 +177,55 @@ class _TeacherMessageState extends State<TeacherMessage> {
 
   Widget buildChatBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: maroon.withOpacity(0.15),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.10),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
+          const SizedBox(width: 6),
+
           Expanded(
             child: TextField(
               controller: controller,
               decoration: const InputDecoration(
-                hintText: "Teacher message...",
+                hintText: "Message the parent...",
                 border: InputBorder.none,
+                hintStyle: TextStyle(
+                  color: Colors.black38,
+                  fontSize: 14,
+                ),
               ),
               onSubmitted: sendMessage,
             ),
           ),
-          GestureDetector(
-            onTap: () => sendMessage(controller.text),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 128, 36, 36),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
+
+          Container(
+            decoration: const BoxDecoration(
+              color: maroon,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
                 Icons.send,
                 color: Colors.white,
                 size: 20,
               ),
+              onPressed: () => sendMessage(controller.text),
             ),
           ),
         ],
@@ -126,39 +246,50 @@ class _TeacherMessageState extends State<TeacherMessage> {
       color: Colors.white,
       child: Column(
         children: [
+          buildHeaderNotice(),
+
           Expanded(
             child: Container(
+              margin: const EdgeInsets.fromLTRB(0, 8, 0, 0),
               decoration: const BoxDecoration(
                 color: Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
               ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ValueListenableBuilder(
-                      valueListenable: ChatService.messages,
-                      builder: (context, chatMessages, _) {
-                        final messages =
-                            chatMessages.map((message) => message.toMap()).toList();
+              child: ValueListenableBuilder(
+                valueListenable: ChatService.messages,
+                builder: (context, chatMessages, _) {
+                  final messages =
+                      chatMessages.map((message) => message.toMap()).toList();
 
-                        scrollToBottom();
+                  if (messages.isNotEmpty) {
+                    scrollToBottom();
+                  }
 
-                        return ListView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.all(15),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            return buildMessage(messages[index]);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: buildChatBar(),
-                  ),
-                ],
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: messages.isEmpty
+                            ? buildEmptyState()
+                            : ListView.builder(
+                                controller: scrollController,
+                                padding:
+                                    const EdgeInsets.fromLTRB(15, 15, 15, 12),
+                                itemCount: messages.length,
+                                itemBuilder: (context, index) {
+                                  return buildMessage(messages[index]);
+                                },
+                              ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: buildChatBar(),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
