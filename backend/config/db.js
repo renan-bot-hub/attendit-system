@@ -1,97 +1,35 @@
-// Connects Mongoose to MongoDB and formats common connection errors.
 const mongoose = require('mongoose');
 
-require('./env');
+// Cache connection state globally across serverless invocations
+let isConnected = false; 
 
-const DEFAULT_SERVER_SELECTION_TIMEOUT_MS = 10000;
-
-function describeMongoUri(uri) {
-  if (!uri) return 'not configured';
-
-  const withoutCredentials = uri.replace(/\/\/([^:/?#]+)(?::([^@/?#]*))?@/, '//<user>:<password>@');
-
-  try {
-    const match = uri.match(/^mongodb(?:\+srv)?:\/\/(?:[^@]+@)?([^/?]+)(\/([^?]+))?/i);
-    if (!match) return withoutCredentials;
-
-    const hosts = match[1]
-      .split(',')
-      .map((host) => host.trim())
-      .filter(Boolean);
-    const database = match[3] || '(default database)';
-
-    return `${hosts[0]}${hosts.length > 1 ? ` (+${hosts.length - 1} more)` : ''}/${database}`;
-  } catch {
-    return withoutCredentials;
-  }
-}
-
-function isBadAuthError(err) {
-  const message = String(err && err.message ? err.message : err).toLowerCase();
-
-  return (
-    err?.code === 18 ||
-    err?.code === 8000 ||
-    message.includes('bad auth') ||
-    message.includes('authentication failed') ||
-    message.includes('auth failed')
-  );
-}
-
-function formatMongoError(err) {
-  if (isBadAuthError(err)) {
-    return [
-      `MongoDB authentication failed while connecting to ${describeMongoUri(process.env.MONGO_URI)}.`,
-      'Check the username/password in backend/.env against your MongoDB Atlas Database Access user.',
-      'If the password contains special characters like @, :, /, ?, #, [, ], or %, URL-encode it before putting it in MONGO_URI.',
-      `Original error: ${err.message}`,
-    ].join('\n');
+async function connectDB() {
+  // If already connected, reuse the active pool
+  if (isConnected && mongoose.connection.readyState === 1) {
+    console.log('Reusing warm database connection instance');
+    return;
   }
 
-  return `MongoDB connection error: ${err.message}`;
-}
-
-// Global variable to cache the Mongoose connection across serverless function invocations
-let cachedConnection = null;
-
-async function connectDB(options = {}) {
   if (!process.env.MONGO_URI) {
-    throw new Error('MONGO_URI is not set. Add it to backend/.env or your deployment environment.');
+    throw new Error('MONGO_URI missing from deployment environment variables.');
   }
-
-  // If a connection already exists, reuse it instead of opening a new one
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    console.log('Reusing existing MongoDB connection');
-    return cachedConnection;
-  }
-
-  const timeout = Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || DEFAULT_SERVER_SELECTION_TIMEOUT_MS;
 
   try {
-    console.log(`MongoDB connecting to ${describeMongoUri(process.env.MONGO_URI)}`);
+    console.log('Initiating database connection handshake...');
     
-    // Serverless-friendly optimization: Ensure Mongoose queues operations while connecting
-    const opts = {
-      serverSelectionTimeoutMS: timeout,
-      bufferCommands: true, 
-      ...options,
-    };
+    // Serverless-specific connection tuning
+    const db = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Crash quickly (5s) instead of hanging the function
+      bufferCommands: false,         // Turn off buffering to surface connection faults immediately
+    });
 
-    // Await the connection explicitly
-    cachedConnection = await mongoose.connect(process.env.MONGO_URI, opts);
-    console.log('MongoDB connected successfully');
-    return cachedConnection;
+    isConnected = db.connections[0].readyState === 1;
+    console.log('MongoDB connected cleanly.');
   } catch (err) {
-    err.message = formatMongoError(err);
-    // Don't kill the server process in production/Vercel for intermittent connection blips
-    if (!process.env.VERCEL) {
-      throw err;
-    } else {
-      console.error(err.message);
-    }
+    console.error('Database connection failed directly:', err.message);
+    isConnected = false;
+    throw err; // Crucial: Throwing tells your endpoints that the DB is broken
   }
 }
 
 module.exports = connectDB;
-module.exports.describeMongoUri = describeMongoUri;
-module.exports.formatMongoError = formatMongoError;
