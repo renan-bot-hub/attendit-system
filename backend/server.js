@@ -104,7 +104,7 @@ app.get("/api/health", (req, res) => {
     db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     uptime: process.uptime(),
     env: process.env.NODE_ENV || "development",
-    tensorflow: "attendance risk model enabled",
+    tensorflow: process.env.VERCEL ? "disabled on serverless" : "attendance risk model enabled",
   });
 });
 
@@ -125,16 +125,16 @@ app.use("/api/qr", qrRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// --- MODIFIED STARTUP LOGIC FOR VERCEL COMPATIBILITY ---
+
 if (!process.env.MONGO_URI) {
-  console.error(
-    "FATAL: MONGO_URI is not set. Add it to .env local or Render env vars."
-  );
-  process.exit(1);
+  console.error("FATAL: MONGO_URI is not set.");
+  if (!process.env.VERCEL) process.exit(1);
 }
 
 if (!process.env.JWT_SECRET) {
   console.error("FATAL: JWT_SECRET is not set.");
-  process.exit(1);
+  if (!process.env.VERCEL) process.exit(1);
 }
 
 const PORT = process.env.PORT || 5000;
@@ -143,38 +143,42 @@ async function start() {
   try {
     await connectDB();
 
-    try {
-      await trainRiskModel();
-    } catch (aiError) {
-      console.error("TensorFlow risk model failed to train:", aiError.message);
-      console.log(
-        "Server will continue running, but AI risk prediction may be unavailable."
-      );
+    // Skip training on Vercel to bypass the 10s serverless timeout limit
+    if (!process.env.VERCEL) {
+      try {
+        await trainRiskModel();
+      } catch (aiError) {
+        console.error("TensorFlow risk model failed to train:", aiError.message);
+      }
     }
 
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/api/health`);
-    });
+    // Skip app.listen() on Vercel; Vercel handles the routing instantiation internally
+    if (!process.env.VERCEL) {
+      const server = app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Health check: http://localhost:${PORT}/api/health`);
+      });
 
-    server.on("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        console.error(
-          `Port ${PORT} is already in use. Set PORT to a free port or stop the other process.`
-        );
-        process.exit(1);
-      }
-
-      throw err;
-    });
+      server.on("error", (err) => {
+        if (err.code === "EADDRINUSE") {
+          console.error(`Port ${PORT} is already in use.`);
+          process.exit(1);
+        }
+        throw err;
+      });
+    }
   } catch (err) {
     console.error("Server startup failed:", err.message);
-    process.exit(1);
+    if (!process.env.VERCEL) process.exit(1);
   }
 }
 
-if (require.main === module) {
+// Automatically establish connection for the Vercel serverless environment
+if (process.env.VERCEL) {
+  connectDB().catch((err) => console.error("Database lazy-connect error:", err));
+} else if (require.main === module) {
   start();
 }
 
-module.exports = { app, start };
+// Required export statement so the Vercel Node runtime can process Express requests
+module.exports = app;
