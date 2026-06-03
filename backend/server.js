@@ -66,10 +66,15 @@ const fromEnv = (process.env.CLIENT_ORIGIN || "")
 
 const allowedOrigins = [...new Set([...defaultDev, ...mobileDev, ...fromEnv])];
 
+// FIXED: Dynamically whitelist any Vercel origin to eliminate CORS errors when functions wake up
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin || 
+        allowedOrigins.includes(origin) || 
+        origin.endsWith(".vercel.app")
+      ) {
         return callback(null, true);
       }
 
@@ -97,13 +102,12 @@ app.get("/", (req, res) => {
   });
 });
 
-// FIXED: Converted to an async handler to force connectDB() to finish on serverless environments
 app.get("/api/health", async (req, res) => {
   let dbStatus = "disconnected";
   let dbError = null;
 
   try {
-    // Force Mongoose to verify connection before compiling health results
+    // Force Mongoose to complete handshake or fail outright so errors surface instantly
     await connectDB();
     dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
   } catch (err) {
@@ -114,7 +118,7 @@ app.get("/api/health", async (req, res) => {
     status: dbError ? "error" : "ok",
     app: "Attend-IT Backend API",
     db: dbStatus,
-    error_details: dbError, // Captures and surfaces firewall/auth issues explicitly
+    error_details: dbError, 
     uptime: process.uptime(),
     env: process.env.NODE_ENV || "development",
     tensorflow: process.env.VERCEL ? "disabled on serverless" : "attendance risk model enabled",
