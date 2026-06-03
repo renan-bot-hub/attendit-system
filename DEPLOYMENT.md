@@ -40,7 +40,7 @@ You can use the existing `seed.js`. Temporarily point your local `.env` at Atlas
 ```bash
 # backend/.env  (local file — already gitignored)
 MONGO_URI=mongodb+srv://attendit-app:YOURPASS@cluster0.xxxxx.mongodb.net/attend_it?retryWrites=true&w=majority
-JWT_SECRET=anything_for_local
+JWT_SECRET=replace_this_with_a_unique_secret_of_at_least_32_characters
 ```
 
 Then run:

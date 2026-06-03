@@ -1,18 +1,32 @@
-// Auth helpers — signup, login (caches token + user in localStorage),
-// logout, and the synchronous getCurrentUser / isAuthenticated checks.
+// Auth helpers - login, OTP verification, cached session utilities, and logout.
 
 import API from './api';
 
 export const authService = {
-  signup: async (userData) => {
-    const response = await API.post('/auth/signup', normalizeUserData(userData));
-    return response.data;
-  },
-
   login: async (credentials) => {
     const response = await API.post('/auth/login', {
       ...credentials,
       email: normalizeEmail(credentials.email),
+    });
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
+  requestOtp: async (credentials) => {
+    const response = await API.post('/auth/request-otp', {
+      ...credentials,
+      email: normalizeEmail(credentials.email),
+    });
+    return response.data;
+  },
+
+  verifyOtp: async ({ email, otp }) => {
+    const response = await API.post('/auth/verify-otp', {
+      email: normalizeEmail(email),
+      otp,
     });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
@@ -44,13 +58,4 @@ export const authService = {
 
 function normalizeEmail(email = '') {
   return email.trim().toLowerCase();
-}
-
-function normalizeUserData(userData) {
-  return {
-    ...userData,
-    name: userData.name?.trim() || '',
-    email: normalizeEmail(userData.email),
-    department: userData.department?.trim() || '',
-  };
 }

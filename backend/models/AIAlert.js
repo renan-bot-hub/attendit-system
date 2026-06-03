@@ -2,6 +2,7 @@
 // (Module #4, Fig. 10). One row per (student, pattern).
 
 const mongoose = require('mongoose');
+const { RISK_LEVELS } = require('../utils/riskLevels');
 
 const aiAlertSchema = new mongoose.Schema({
   student:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -14,7 +15,7 @@ const aiAlertSchema = new mongoose.Schema({
   },
   patternDetail: { type: String, default: '' },
   riskScore:     { type: Number, default: 0, min: 0, max: 100 },
-  riskLevel:     { type: String, enum: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'], default: 'Medium Risk' },
+  riskLevel:     { type: String, enum: RISK_LEVELS, default: 'Moderate' },
   recommendations: [{ type: String }],
   scorer:         { type: String, enum: ['model', 'rules'], default: 'rules' },
   modelVersion:   { type: String, default: '' },

@@ -1,21 +1,21 @@
 student_id,attendance_rate,consecutive_absences,total_absences,late_count,last7_day_absences,last30_day_absences,worst_weekday_absence_rate,risk_label
-anon-001,98,0,0,1,0,0,0.00,Low Risk
-anon-002,95,0,1,2,0,1,0.10,Low Risk
-anon-003,93,0,2,3,0,2,0.20,Low Risk
-anon-004,91,0,2,5,0,2,0.25,Medium Risk
-anon-005,89,1,2,6,1,2,0.25,Medium Risk
-anon-006,88,1,2,5,1,2,0.30,Medium Risk
-anon-007,86,1,3,4,1,3,0.35,High Risk
-anon-008,84,2,3,3,2,3,0.40,High Risk
-anon-009,82,3,4,2,3,4,0.45,High Risk
-anon-010,80,3,4,4,3,4,0.50,High Risk
-anon-011,78,4,5,5,4,5,0.55,Critical
-anon-012,74,4,5,6,4,5,0.60,Critical
-anon-013,72,5,6,6,5,6,0.65,Critical
-anon-014,70,5,7,7,5,7,0.70,Critical
-anon-015,97,0,0,0,0,0,0.00,Low Risk
-anon-016,90,0,2,5,0,2,0.25,Medium Risk
-anon-017,83,3,4,4,3,4,0.45,High Risk
-anon-018,73,4,6,6,4,6,0.65,Critical
-anon-019,96,0,1,1,0,1,0.10,Low Risk
-anon-020,87,1,2,5,1,2,0.30,Medium Risk
+anon-001,98,0,0,1,0,0,0.00,Low
+anon-002,95,0,1,2,0,1,0.10,Low
+anon-003,93,0,2,3,0,2,0.20,Low
+anon-004,91,0,2,5,0,2,0.25,Moderate
+anon-005,89,1,2,6,1,2,0.25,Moderate
+anon-006,88,1,2,5,1,2,0.30,Moderate
+anon-007,86,1,3,4,1,3,0.35,Moderate
+anon-008,84,2,3,3,2,3,0.40,High
+anon-009,82,3,4,2,3,4,0.45,High
+anon-010,80,3,4,4,3,4,0.50,High
+anon-011,78,4,5,5,4,5,0.55,High
+anon-012,74,4,5,6,4,5,0.60,High
+anon-013,72,5,6,6,5,6,0.65,High
+anon-014,70,5,7,7,5,7,0.70,High
+anon-015,97,0,0,0,0,0,0.00,Low
+anon-016,90,0,2,5,0,2,0.25,Moderate
+anon-017,83,3,4,4,3,4,0.45,High
+anon-018,73,4,6,6,4,6,0.65,High
+anon-019,96,0,1,1,0,1,0.10,Low
+anon-020,87,1,2,5,1,2,0.30,Moderate

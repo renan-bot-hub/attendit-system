@@ -12,7 +12,13 @@ const tf = require('@tensorflow/tfjs');
 
 const { generate } = require('./dataset');
 const { loadHistoricalDataset } = require('./realData');
-const { FEATURE_NAMES, RISK_TIERS } = require('./featureSpec');
+const {
+  CLASS_LABELS,
+  FEATURE_NAMES,
+  FEATURE_SCHEMA,
+  MODEL_TASK,
+  MODEL_VERSION,
+} = require('./featureSpec');
 
 const MODEL_DIR = path.resolve(__dirname, 'model');
 
@@ -56,12 +62,11 @@ function fileSaveHandler(dir) {
 
 function buildModel(numFeatures, numClasses) {
   const model = tf.sequential();
-  model.add(tf.layers.dense({ inputShape: [numFeatures], units: 64, activation: 'relu' }));
-  model.add(tf.layers.dropout({ rate: 0.25 }));
+  model.add(tf.layers.dense({ inputShape: [numFeatures], units: 32, activation: 'relu', name: 'features_dense_1' }));
+  model.add(tf.layers.dropout({ rate: 0.2, name: 'regularization_dropout_1' }));
   model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-  model.add(tf.layers.dropout({ rate: 0.15 }));
-  model.add(tf.layers.dense({ units: 16, activation: 'relu' }));
-  model.add(tf.layers.dense({ units: numClasses, activation: 'softmax' }));
+  model.add(tf.layers.dropout({ rate: 0.1, name: 'regularization_dropout_2' }));
+  model.add(tf.layers.dense({ units: numClasses, activation: 'softmax', name: 'risk_classification' }));
   model.compile({
     optimizer: tf.train.adam(0.003),
     loss: 'categoricalCrossentropy',
@@ -102,7 +107,7 @@ function splitDataset(X, y, ratios = { train: 0.7, validation: 0.15, test: 0.15 
 function tensorsFor(split) {
   return {
     xs: tf.tensor2d(split.X),
-    ys: tf.oneHot(tf.tensor1d(split.y, 'int32'), RISK_TIERS.length),
+    ys: tf.oneHot(tf.tensor1d(split.y, 'int32'), CLASS_LABELS.length),
   };
 }
 
@@ -140,12 +145,12 @@ function binaryAuc(scores, labels) {
 
 function evaluateProbabilities(trueLabels, probabilities) {
   const predictions = probabilities.map(argMax);
-  const confusion = Array.from({ length: RISK_TIERS.length }, () => Array(RISK_TIERS.length).fill(0));
+  const confusion = Array.from({ length: CLASS_LABELS.length }, () => Array(CLASS_LABELS.length).fill(0));
   for (let i = 0; i < trueLabels.length; i++) {
     confusion[trueLabels[i]][predictions[i]]++;
   }
 
-  const perClass = RISK_TIERS.map((tier, index) => {
+  const perClass = CLASS_LABELS.map((tier, index) => {
     const tp = confusion[index][index];
     const fp = confusion.reduce((sum, row, rowIndex) => rowIndex === index ? sum : sum + row[index], 0);
     const fn = confusion[index].reduce((sum, value, colIndex) => colIndex === index ? sum : sum + value, 0);
@@ -215,11 +220,19 @@ function loadTrainingData(args) {
       rowCount: n,
       sampleCount: n,
       labelDistribution: Object.fromEntries(
-        RISK_TIERS.map((tier, index) => [tier, dataset.y.filter((label) => label === index).length])
+        CLASS_LABELS.map((tier, index) => [tier, dataset.y.filter((label) => label === index).length])
       ),
       identifiersHashed: false,
     },
   };
+}
+
+function resetOutputDir(outputDir) {
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  for (const fileName of ['model.json', 'weights.bin', 'meta.json']) {
+    const target = path.join(outputDir, fileName);
+    if (fs.existsSync(target)) fs.unlinkSync(target);
+  }
 }
 
 async function main() {
@@ -229,6 +242,7 @@ async function main() {
   const outputDir = path.resolve(process.cwd(), args.out || MODEL_DIR);
   const dataset = loadTrainingData(args);
   const splits = splitDataset(dataset.X, dataset.y);
+  resetOutputDir(outputDir);
 
   console.log(`Samples: ${dataset.X.length}`);
   console.log(`  train: ${splits.train.X.length}`);
@@ -239,7 +253,7 @@ async function main() {
   const validation = tensorsFor(splits.validation);
   const test = tensorsFor(splits.test);
 
-  const model = buildModel(FEATURE_NAMES.length, RISK_TIERS.length);
+  const model = buildModel(FEATURE_NAMES.length, CLASS_LABELS.length);
   console.log('\nModel summary:');
   model.summary();
 
@@ -276,8 +290,16 @@ async function main() {
   await model.save(fileSaveHandler(outputDir));
 
   const meta = {
+    task: MODEL_TASK,
+    version: MODEL_VERSION,
     featureNames: FEATURE_NAMES,
-    classes: RISK_TIERS,
+    featureSchema: FEATURE_SCHEMA,
+    preprocessing: {
+      type: 'min-max',
+      description: 'Raw MongoDB-derived attendance features are clamped to each feature min/max and scaled into 0..1.',
+    },
+    classes: CLASS_LABELS,
+    outputType: 'multi-class classification',
     trainedAt: new Date().toISOString(),
     dataSource: dataset.source,
     productionReady: dataset.productionReady,
@@ -292,7 +314,7 @@ async function main() {
       batchSize,
       optimizer: 'adam',
       learningRate: 0.003,
-      architecture: ['dense:64:relu', 'dropout:0.25', 'dense:32:relu', 'dropout:0.15', 'dense:16:relu', 'dense:4:softmax'],
+      architecture: ['dense:32:relu', 'dropout:0.20', 'dense:32:relu', 'dropout:0.10', 'dense:3:softmax'],
     },
     metrics: {
       validation: validationMetrics,

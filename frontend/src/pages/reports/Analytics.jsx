@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import { attendService } from '../../services/attendService';
+import { normalizeRiskLevel, riskTextClass } from '../../utils/riskLevels';
 
 // Analytics dashboard: KPIs, auto-generated insights, risk breakdown
 export default function Analytics() {
@@ -20,19 +21,19 @@ export default function Analytics() {
   // Generate plain-English insights from the summary + risk data
   const buildInsights = (sum, riskData) => {
     const generated = [];
-    const critical = riskData.filter((r) => r.riskLevel === 'Critical').length;
-    const high = riskData.filter((r) => r.riskLevel === 'High Risk').length;
+    const high = riskData.filter((r) => normalizeRiskLevel(r.riskLevel) === 'High').length;
+    const moderate = riskData.filter((r) => normalizeRiskLevel(r.riskLevel) === 'Moderate').length;
 
-    if (critical > 0) {
-      generated.push({
-        id: 1, type: 'alert', badge: 'ALERT',
-        message: `${critical} student${critical > 1 ? 's are' : ' is'} currently in Critical risk (<75% attendance). Immediate intervention recommended.`,
-      });
-    }
     if (high > 0) {
       generated.push({
+        id: 1, type: 'alert', badge: 'ALERT',
+        message: `${high} student${high > 1 ? 's are' : ' is'} currently High risk. Immediate intervention recommended.`,
+      });
+    }
+    if (moderate > 0) {
+      generated.push({
         id: 2, type: 'warning', badge: 'WARNING',
-        message: `${high} student${high > 1 ? 's are' : ' is'} in High Risk band (75–85%). Schedule parent outreach.`,
+        message: `${moderate} student${moderate > 1 ? 's are' : ' is'} currently Moderate risk. Schedule parent outreach.`,
       });
     }
     if (sum.overallRate >= 90) {
@@ -102,9 +103,9 @@ export default function Analytics() {
     }
   };
 
-  const criticalCount = risk.filter((r) => r.riskLevel === 'Critical').length;
-  const highCount = risk.filter((r) => r.riskLevel === 'High Risk').length;
-  const totalAtRisk = criticalCount + highCount;
+  const highCount = risk.filter((r) => normalizeRiskLevel(r.riskLevel) === 'High').length;
+  const moderateCount = risk.filter((r) => normalizeRiskLevel(r.riskLevel) === 'Moderate').length;
+  const totalAtRisk = highCount + moderateCount;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -145,7 +146,7 @@ export default function Analytics() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">At Risk</p>
           <h2 className="text-4xl font-black text-red-500 mb-2">{loading ? '—' : totalAtRisk}</h2>
-          <p className="text-xs font-bold text-red-400">{criticalCount} Critical • {highCount} High</p>
+          <p className="text-xs font-bold text-red-400">{highCount} High • {moderateCount} Moderate</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -199,7 +200,9 @@ export default function Analytics() {
           <div className="mt-8">
             <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-3">Risk Breakdown</h3>
             <div className="space-y-2">
-              {risk.slice(0, 10).map((r) => (
+              {risk.slice(0, 10).map((r) => {
+                const riskLevel = normalizeRiskLevel(r.riskLevel);
+                return (
                 <div key={r.studentId} className="flex justify-between items-center bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
                   <div>
                     <p className="font-semibold text-slate-800 text-sm">{r.name}</p>
@@ -207,14 +210,11 @@ export default function Analytics() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-sm text-slate-900">{r.attendanceRate}%</p>
-                    <p className={`text-[10px] font-black uppercase ${
-                      r.riskLevel === 'Critical' ? 'text-red-600' :
-                      r.riskLevel === 'High Risk' ? 'text-orange-600' :
-                      r.riskLevel === 'Moderate' ? 'text-amber-600' : 'text-emerald-600'
-                    }`}>{r.riskLevel}</p>
+                    <p className={`text-[10px] font-black uppercase ${riskTextClass(riskLevel)}`}>{riskLevel}</p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

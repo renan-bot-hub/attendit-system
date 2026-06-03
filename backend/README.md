@@ -26,6 +26,35 @@ Run backend tests:
 npm.cmd test
 ```
 
+## Seed bulk test students
+
+Students are data-only records in this system. They appear in Student
+Management, attendance, reports, QR flows, and AI analysis, but they do not use
+the web login screen. Use an admin, teacher, or staff account for web login.
+
+Create or update 200 deterministic test students:
+
+```powershell
+npm.cmd run seed:test-students
+```
+
+Create the same students plus seeded sessions and attendance history for AI and
+risk-analysis testing:
+
+```powershell
+npm.cmd run seed:test-students -- --count=200 --with-attendance
+```
+
+Preview without writing to MongoDB:
+
+```powershell
+npm.cmd run seed:test-students -- --count=200 --with-attendance --dry-run
+```
+
+The script is non-destructive: it upserts records whose IDs start with
+`AIT-TEST` and does not delete existing students. Change the generated group
+with `--prefix=AIT-BATCH2` if you need another independent test set.
+
 ## Attendance risk model
 
 The AI alert module uses the TensorFlow.js model in `ml/model/`. The training

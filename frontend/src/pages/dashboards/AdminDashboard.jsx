@@ -11,6 +11,8 @@ import { userService } from '../../services/userService';
 import { attendService } from '../../services/attendService';
 import { caseService } from '../../services/caseService';
 import { useSchool } from '../../context/useSchool';
+import { normalizeRiskLevel, riskBadgeClass, riskBarClass } from '../../utils/riskLevels';
+import { cleanStudentName } from '../../utils/display';
 
 // Administrator Hub
 export default function AdminDashboard() {
@@ -58,16 +60,23 @@ export default function AdminDashboard() {
   }), [users]);
 
   const caseDistribution = useMemo(() => {
-    const tally = { 'Critical': 0, 'High Risk': 0, 'Medium Risk': 0, 'Low Risk': 0 };
-    for (const c of cases) tally[c.riskLevel] = (tally[c.riskLevel] || 0) + 1;
+    const tally = { High: 0, Moderate: 0, Low: 0 };
+    for (const c of cases) {
+      const level = normalizeRiskLevel(c.riskLevel);
+      tally[level] = (tally[level] || 0) + 1;
+    }
     const total = cases.length || 1;
     return Object.entries(tally).map(([level, value]) => ({ level, value, pct: Math.round((value / total) * 100) }));
   }, [cases]);
 
-  const criticalRisk = risk.filter((r) => r.riskLevel === 'Critical').length;
-  const highRisk     = risk.filter((r) => r.riskLevel === 'High Risk').length;
+  const highRisk     = risk.filter((r) => normalizeRiskLevel(r.riskLevel) === 'High').length;
+  const moderateRisk = risk.filter((r) => normalizeRiskLevel(r.riskLevel) === 'Moderate').length;
   const openCases    = cases.filter((c) => ['Open', 'Pending'].includes(c.status)).length;
   const escalated    = cases.filter((c) => c.status === 'Escalated').length;
+  const topAtRisk = useMemo(() => risk
+    .filter((r) => ['High', 'Moderate'].includes(normalizeRiskLevel(r.riskLevel)))
+    .sort((a, b) => attendanceRateFor(a) - attendanceRateFor(b))
+    .slice(0, 6), [risk]);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -93,7 +102,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Big label="Overall Attendance Rate" value={loading ? '—' : `${summary.overallRate || 0}%`} accent="text-brand-600" icon={<TrendingUp className="w-6 h-6" />} />
-        <Big label="At Risk"        value={loading ? '—' : criticalRisk + highRisk} sub={`${criticalRisk} Critical • ${highRisk} High`} accent="text-red-600" icon={<AlertTriangle className="w-6 h-6" />} />
+        <Big label="At Risk"        value={loading ? '—' : highRisk + moderateRisk} sub={`${highRisk} High • ${moderateRisk} Moderate`} accent="text-red-600" icon={<AlertTriangle className="w-6 h-6" />} />
         <Big label="Cases (Open + Escalated)" value={loading ? '—' : openCases + escalated} sub={`${escalated} escalated`} accent="text-amber-600" icon={<FileText className="w-6 h-6" />} />
       </div>
 
@@ -119,11 +128,7 @@ export default function AdminDashboard() {
                     <span className="text-slate-500">{d.value} ({d.pct}%)</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${
-                      d.level === 'Critical'    ? 'bg-red-500' :
-                      d.level === 'High Risk'   ? 'bg-orange-500' :
-                      d.level === 'Medium Risk' ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`} style={{ width: `${d.pct}%` }} />
+                    <div className={`h-2 rounded-full ${riskBarClass(d.level)}`} style={{ width: `${d.pct}%` }} />
                   </div>
                 </div>
               ))}
@@ -140,23 +145,23 @@ export default function AdminDashboard() {
           </div>
           <div className="divide-y divide-slate-100">
             {loading && <p className="p-6 text-slate-400 text-sm text-center">Loading…</p>}
-            {!loading && risk.length === 0 && <p className="p-6 text-slate-400 text-sm text-center">No attendance data yet.</p>}
-            {risk.slice(0, 6).map((r) => (
-              <div key={r.studentId} className="p-4 flex justify-between items-center hover:bg-slate-50">
-                <div>
-                  <p className="font-bold text-slate-800 text-sm">{r.name}</p>
-                  <p className="text-xs text-slate-500">{r.section || '—'}</p>
+            {!loading && topAtRisk.length === 0 && <p className="p-6 text-slate-400 text-sm text-center">No Moderate or High risk students.</p>}
+            {topAtRisk.map((r) => {
+              const riskLevel = normalizeRiskLevel(r.riskLevel);
+              const rate = attendanceRateFor(r);
+              return (
+                <div key={r.studentId} className="p-4 flex justify-between items-center hover:bg-slate-50">
+                  <div>
+                    <p className="font-bold text-slate-800 text-sm">{cleanStudentName(r.name)}</p>
+                    <p className="text-xs text-slate-500">{r.section || '—'}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-black text-slate-900">{rate}%</span>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${riskBadgeClass(riskLevel)}`}>{riskLevel}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-black text-slate-900">{r.attendanceRate}%</span>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    r.riskLevel === 'Critical' ? 'bg-red-100 text-red-700' :
-                    r.riskLevel === 'High Risk' ? 'bg-orange-100 text-orange-700' :
-                    r.riskLevel === 'Moderate' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                  }`}>{r.riskLevel}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -242,4 +247,11 @@ function TrendChart({ trend, loading }) {
       })}
     </svg>
   );
+}
+
+function attendanceRateFor(row = {}) {
+  const value = row.attendanceRate ?? row.attendancePercentage ?? row.rate ?? 0;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(100, Math.round(number)));
 }

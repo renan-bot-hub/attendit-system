@@ -2,7 +2,7 @@
 // their role after a successful login.
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 import SchoolMark from '../../components/branding/SchoolMark';
 import { authService } from '../../services/authService';
@@ -16,6 +16,16 @@ export default function Login() {
   const navigate = useNavigate();
   const { settings } = useSchool();
 
+  const routeAfterLogin = (user) => {
+    if (user.role === 'admin') navigate('/admin');
+    else if (user.role === 'staff') navigate('/staff');
+    else if (user.role === 'teacher') navigate('/teacher');
+    else {
+      setError('Web login is restricted to admin, teacher, and staff accounts.');
+      authService.logout();
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -23,15 +33,13 @@ export default function Login() {
 
     try {
       const data = await authService.login({ email, password });
-      if (data.user.role === 'admin') navigate('/admin');
-      else if (data.user.role === 'staff') navigate('/staff');
-      else if (data.user.role === 'teacher') navigate('/teacher');
-      else {
-        setError('Web login is restricted to admin, teacher, and staff accounts.');
-        authService.logout();
-      }
+      routeAfterLogin(data.user);
     } catch (err) {
-      setError(err.response?.data?.msg || err.response?.data?.error || 'Login failed. Please check your credentials.');
+      if (!err.response) {
+        setError('Cannot reach the backend API. Make sure the server is running on port 5000.');
+      } else {
+        setError(err.response?.data?.msg || err.response?.data?.message || err.response?.data?.error || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -98,16 +106,9 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-60"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Please wait...' : 'Sign In'}
             </button>
           </form>
-
-          <p className="mt-5 text-center text-sm text-slate-600">
-            New here?{' '}
-            <Link to="/signup" className="font-semibold text-brand-600 hover:text-brand-700 hover:underline">
-              Sign Up
-            </Link>
-          </p>
         </section>
       </main>
     </div>

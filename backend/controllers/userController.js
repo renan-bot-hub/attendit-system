@@ -4,6 +4,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const { buildScopedStudentQuery, normalizeEmail } = require('../utils/accessControl');
+const { resolveStudentSection } = require('../utils/sectionPlacement');
 
 const WEB_ROLES   = ['admin', 'teacher', 'staff', 'parent'];
 const DATA_ROLES  = ['student'];
@@ -35,11 +36,19 @@ exports.getMe = async (req, res) => {
 
 exports.updateMe = async (req, res) => {
   try {
-    const { name, department, section, gradeLevel } = req.body;
+    const {
+      name,
+      department,
+      section,
+      gradeLevel,
+      gradeSection,
+      birthdate,
+      contactNumber,
+    } = req.body;
     const email = req.body.email ? normalizeEmail(req.body.email) : undefined;
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { name, email, department, section, gradeLevel },
+      { name, email, department, section, gradeLevel, gradeSection, birthdate, contactNumber },
       { new: true, runValidators: true }
     ).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -101,15 +110,16 @@ exports.createUser = async (req, res) => {
     if (exists) return res.status(400).json({ message: 'Email already in use' });
 
     const hashed = await bcrypt.hash(isLoginUser ? password : User.generateQrToken(), 10);
+    const placement = await resolveStudentSection({ role, section, gradeLevel, gradeSection });
 
     const doc = {
       name, email, password: hashed,
       role,
       studentId: studentId || studentNumber || null,
       studentNumber: studentNumber || studentId || null,
-      section: section || gradeSection || null,
-      gradeLevel: gradeLevel || null,
-      gradeSection: gradeSection || section || null,
+      section: placement.section || null,
+      gradeLevel: placement.gradeLevel || null,
+      gradeSection: placement.gradeSection || null,
       department: department || null,
       teacherNumber: teacherNumber || null,
       birthdate: birthdate || null,
@@ -165,6 +175,12 @@ exports.bulkCreate = async (req, res) => {
         continue;
       }
       const hashed = await bcrypt.hash(isLoginUser ? row.password : User.generateQrToken(), 10);
+      const placement = await resolveStudentSection({
+        role,
+        section: row.section || row.gradeSection,
+        gradeLevel: row.gradeLevel,
+        gradeSection: row.gradeSection || row.section,
+      });
       const doc = {
         name: row.name,
         email,
@@ -172,9 +188,9 @@ exports.bulkCreate = async (req, res) => {
         role,
         studentId: row.studentId || row.studentNumber || null,
         studentNumber: row.studentNumber || row.studentId || null,
-        section: row.section || row.gradeSection || null,
-        gradeLevel: row.gradeLevel || null,
-        gradeSection: row.gradeSection || row.section || null,
+        section: placement.section || null,
+        gradeLevel: placement.gradeLevel || null,
+        gradeSection: placement.gradeSection || null,
         department: row.department || null,
         teacherNumber: row.teacherNumber || null,
         birthdate: row.birthdate || null,
@@ -208,9 +224,21 @@ exports.updateUser = async (req, res) => {
     if (role && !ALL_ROLES.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
+    const existing = await User.findById(req.params.id).select('role section gradeLevel gradeSection');
+    if (!existing) return res.status(404).json({ message: 'User not found' });
+    const nextRole = role || existing.role;
+    const nextSection = Object.prototype.hasOwnProperty.call(req.body, 'section') ? section : existing.section;
+    const nextGradeLevel = gradeLevel || existing.gradeLevel;
+    const nextGradeSection = Object.prototype.hasOwnProperty.call(req.body, 'gradeSection') ? gradeSection : existing.gradeSection;
+    const placement = await resolveStudentSection({
+      role: nextRole,
+      section: nextSection,
+      gradeLevel: nextGradeLevel,
+      gradeSection: nextGradeSection,
+    });
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, role, department, section, gradeLevel, gradeSection, studentId, studentNumber,
+      { name, email, role, department, section: placement.section, gradeLevel: placement.gradeLevel, gradeSection: placement.gradeSection, studentId, studentNumber,
         teacherNumber, birthdate, contactNumber, parentName, parentEmail, parentPhone },
       { new: true, runValidators: true }
     ).select('-password');

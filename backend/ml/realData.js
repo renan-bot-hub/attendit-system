@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const { labelFor, DEFAULT_THRESHOLDS } = require('./dataset');
-const { extractFeatures, RISK_TIERS } = require('./featureSpec');
+const { CLASS_LABELS, extractFeatures } = require('./featureSpec');
+const { normalizeRiskLevel } = require('../utils/riskLevels');
 
 const SENSITIVE_COLUMNS = [
   'name',
@@ -129,9 +130,11 @@ function hashIdentifier(value, salt = '') {
 function normalizeLabel(value) {
   if (value === undefined || value === null || value === '') return null;
   const raw = String(value).trim().toLowerCase();
-  const index = RISK_TIERS.findIndex((tier) => tier.toLowerCase() === raw);
+  if (['0', '1', '2'].includes(raw)) return Number(raw);
+  if (raw === '3') return CLASS_LABELS.indexOf('High');
+  const normalized = normalizeRiskLevel(value, '');
+  const index = CLASS_LABELS.findIndex((tier) => tier.toLowerCase() === normalized.toLowerCase());
   if (index >= 0) return index;
-  if (['0', '1', '2', '3'].includes(raw)) return Number(raw);
   return null;
 }
 
@@ -245,8 +248,8 @@ function aggregatedRowsToSamples(rows, thresholds, salt) {
 }
 
 function labelDistribution(labels) {
-  const counts = Object.fromEntries(RISK_TIERS.map((tier) => [tier, 0]));
-  for (const label of labels) counts[RISK_TIERS[label]] += 1;
+  const counts = Object.fromEntries(CLASS_LABELS.map((tier) => [tier, 0]));
+  for (const label of labels) counts[CLASS_LABELS[label]] += 1;
   return counts;
 }
 
@@ -262,7 +265,7 @@ function loadHistoricalDataset(filePath, options = {}) {
     sample.features.every(Number.isFinite)
       && Number.isInteger(sample.label)
       && sample.label >= 0
-      && sample.label < RISK_TIERS.length
+      && sample.label < CLASS_LABELS.length
   ));
 
   if (valid.length < 20) {
@@ -276,7 +279,7 @@ function loadHistoricalDataset(filePath, options = {}) {
   return {
     X,
     y,
-    classes: RISK_TIERS,
+    classes: CLASS_LABELS,
     samples: valid,
     stats: {
       sourceFile: path.basename(filePath),

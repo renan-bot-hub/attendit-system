@@ -5,11 +5,17 @@ const Case = require('../models/Case');
 const User = require('../models/User');
 const { isValidObjectId } = require('../middleware/validateRequest');
 const { getAccessibleStudentIds, userCanAccessStudent } = require('../utils/accessControl');
+const { normalizeRiskLevel, riskQueryValues } = require('../utils/riskLevels');
+
+function serializeCase(c) {
+  const data = typeof c.toObject === 'function' ? c.toObject() : c;
+  return { ...data, riskLevel: normalizeRiskLevel(data.riskLevel) };
+}
 
 async function buildCaseFilter(req) {
   const filter = {};
   if (req.query.status) filter.status = req.query.status;
-  if (req.query.riskLevel) filter.riskLevel = req.query.riskLevel;
+  if (req.query.riskLevel) filter.riskLevel = { $in: riskQueryValues(req.query.riskLevel) };
   if (req.query.type) filter.type = req.query.type;
 
   const accessibleStudentIds = await getAccessibleStudentIds(req.user);
@@ -41,8 +47,9 @@ exports.getCases = async (req, res) => {
       .populate('reviewedBy',  'name role')
       .populate('openedBy',    'name role')
       .populate('escalatedTo', 'name role')
-      .sort({ createdAt: -1 });
-    res.json(cases);
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(cases.map(serializeCase));
   } catch (err) {
     console.error(err);
     res.status(err.status || 500).json({ message: err.message || 'Server error' });
@@ -91,14 +98,14 @@ exports.createCase = async (req, res) => {
       type: type || 'Attendance Intervention',
       description: description.trim(),
       fileName: fileName || '',
-      riskLevel: riskLevel || 'Medium Risk',
+      riskLevel: normalizeRiskLevel(riskLevel),
       openedBy: req.user.id,
       status: 'Open',
     });
 
     const populated = await newCase.populate('student',
       'name email studentId section gradeLevel parentName parentEmail');
-    res.status(201).json(populated);
+    res.status(201).json(serializeCase(populated));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -137,7 +144,7 @@ exports.updateCaseStatus = async (req, res) => {
       .populate('openedBy',   'name role');
 
     if (!updated) return res.status(404).json({ message: 'Case not found' });
-    res.json(updated);
+    res.json(serializeCase(updated));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -170,9 +177,9 @@ exports.escalate = async (req, res) => {
     }
     c.status = 'Escalated';
     c.escalatedAt = new Date();
-    c.riskLevel = req.body.riskLevel || c.riskLevel || 'Critical';
+    c.riskLevel = normalizeRiskLevel(req.body.riskLevel || c.riskLevel, 'High');
     await c.save();
-    res.json(c);
+    res.json(serializeCase(c));
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

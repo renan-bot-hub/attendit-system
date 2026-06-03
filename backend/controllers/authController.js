@@ -1,33 +1,48 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { sendOtpEmail } = require("../config/mailConfig");
+// Signup + login. First web user in an empty DB is auto-promoted to admin.
+// /register supports mobile parent accounts without opening public admin signup.
+
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const {
   findStudentsForParentIdentity,
   normalizeEmail,
-} = require("../utils/accessControl");
+} = require('../utils/accessControl');
 
-const WEB_SIGNUP_ROLES = ["teacher", "staff"];
-const MOBILE_REGISTER_ROLES = ["parent"];
+const WEB_SIGNUP_ROLES = ['teacher', 'staff'];
+const MOBILE_REGISTER_ROLES = ['parent'];
+const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
 
 function publicStaffSignupAllowed() {
-  return process.env.ALLOW_PUBLIC_STAFF_SIGNUP === "true";
+  return process.env.ALLOW_PUBLIC_STAFF_SIGNUP === 'true';
 }
 
 function bootstrapAdminAllowed() {
-  if (process.env.ALLOW_BOOTSTRAP_ADMIN === "true") return true;
-  return (
-    process.env.NODE_ENV !== "production" &&
-    process.env.ALLOW_BOOTSTRAP_ADMIN !== "false"
-  );
+  if (process.env.ALLOW_BOOTSTRAP_ADMIN === 'true') return true;
+  return process.env.NODE_ENV !== 'production' && process.env.ALLOW_BOOTSTRAP_ADMIN !== 'false';
 }
 
 function parentSelfRegistrationAllowed() {
-  return process.env.ALLOW_PARENT_SELF_REGISTRATION !== "false";
+  return process.env.ALLOW_PARENT_SELF_REGISTRATION !== 'false';
 }
 
 function unlinkedParentRegistrationAllowed() {
-  return process.env.ALLOW_UNLINKED_PARENT_REGISTRATION === "true";
+  return process.env.ALLOW_UNLINKED_PARENT_REGISTRATION === 'true';
+}
+
+function escapeRegExp(value = '') {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function findUserForLogin(email) {
+  const exactUser = await User.findOne({ email });
+  if (exactUser) return exactUser;
+
+  return User.findOne({
+    email: new RegExp(`^\\s*${escapeRegExp(email)}\\s*$`, 'i'),
+  });
 }
 
 function publicUser(user) {
@@ -45,11 +60,40 @@ function publicUser(user) {
     teacherNumber: user.teacherNumber,
     birthdate: user.birthdate,
     contactNumber: user.contactNumber,
-    parentName: user.parentName,
-    parentEmail: user.parentEmail,
-    parentPhone: user.parentPhone,
-    isActive: user.isActive,
   };
+}
+
+function signToken(user) {
+  return jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
+}
+
+function generateOtp() {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function hashOtp(user, otp) {
+  return crypto
+    .createHash('sha256')
+    .update(`${user._id}:${otp}:${process.env.JWT_SECRET}`)
+    .digest('hex');
+}
+
+function maskTarget(value = '') {
+  const text = String(value || '').trim();
+  if (!text) return 'registered contact';
+  if (text.includes('@')) {
+    const [name, domain] = text.split('@');
+    return `${name.slice(0, 2)}***@${domain}`;
+  }
+  return `${text.slice(0, 4)}***${text.slice(-2)}`;
+}
+
+function otpDeliveryTarget(user) {
+  return user.contactNumber || user.parentPhone || user.email;
 }
 
 function mobileFields(body) {
@@ -66,20 +110,10 @@ function mobileFields(body) {
     teacherNumber: body.teacherNumber || null,
     birthdate: body.birthdate || null,
     contactNumber: body.contactNumber || body.parentPhone || null,
-    parentName: body.parentName || (body.role === "parent" ? body.name : null),
-    parentEmail:
-      body.parentEmail || (body.role === "parent" ? normalizeEmail(body.email) : null),
+    parentName: body.parentName || (body.role === 'parent' ? body.name : null),
+    parentEmail: body.parentEmail || (body.role === 'parent' ? normalizeEmail(body.email) : null),
     parentPhone: body.parentPhone || body.contactNumber || null,
   };
-}
-
-function generateOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function isValidContactNumber(contactNumber) {
-  if (!contactNumber) return true;
-  return /^[0-9]{11}$/.test(contactNumber);
 }
 
 exports.signup = async (req, res) => {
@@ -88,90 +122,53 @@ exports.signup = async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
 
     if (!name || !normalizedEmail || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email, and password are required",
-      });
+      return res.status(400).json({ msg: 'Name, email, and password are required' });
     }
-
     if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters",
-      });
+      return res.status(400).json({ msg: 'Password must be at least 6 characters' });
     }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
-    }
+    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
     const userCount = await User.countDocuments();
-    let finalRole = role || "teacher";
-
+    let finalRole = role || 'teacher';
     if (userCount === 0) {
       if (!bootstrapAdminAllowed()) {
-        return res.status(403).json({
-          success: false,
-          message:
-            "Bootstrap admin signup is disabled. Create the first admin through a controlled admin seed or database console.",
-        });
+        return res.status(403).json({ msg: 'Bootstrap admin signup is disabled. Create the first admin through a controlled admin seed or database console.' });
       }
-
-      finalRole = "admin";
-    } else if (finalRole === "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Admin accounts can only be created by an existing administrator.",
-      });
+      finalRole = 'admin';
+    } else if (finalRole === 'admin') {
+      return res.status(403).json({ msg: 'Admin accounts can only be created by an existing administrator.' });
     }
-
     if (!WEB_SIGNUP_ROLES.includes(finalRole) && userCount !== 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Web signup is restricted to teacher and staff accounts.",
-      });
+      return res.status(400).json({ msg: 'Web signup is restricted to teacher and staff (Prefect of Discipline) accounts.' });
     }
-
     if (userCount !== 0 && !publicStaffSignupAllowed()) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Public staff signup is disabled. Ask an administrator to create your account.",
-      });
+      return res.status(403).json({ msg: 'Public staff signup is disabled. Ask an administrator to create your account.' });
     }
 
     const user = await User.create({
-      name: name.trim(),
+      name,
       email: normalizedEmail,
       password: await bcrypt.hash(password, 10),
       role: finalRole,
-      isActive: true,
-      ...mobileFields({
-        ...req.body,
-        email: normalizedEmail,
-        role: finalRole,
-      }),
+      ...mobileFields(req.body),
     });
+
+    const msg = userCount === 0
+      ? 'First user registered as administrator.'
+      : 'User registered successfully';
 
     res.status(201).json({
       success: true,
-      message:
-        userCount === 0
-          ? "First user registered as administrator."
-          : "User registered successfully",
+      msg,
+      message: msg,
       bootstrapAdmin: userCount === 0,
       user: publicUser(user),
     });
   } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -179,82 +176,50 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
-    const role = req.body.role || "parent";
+    const role = req.body.role || 'parent';
 
     if (!name || !normalizedEmail || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email, and password are required",
-      });
+      return res.status(400).json({ msg: 'Name, email, and password are required' });
     }
-
     if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters",
-      });
+      return res.status(400).json({ msg: 'Password must be at least 6 characters' });
     }
-
     if (!parentSelfRegistrationAllowed()) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Parent self-registration is disabled. Ask the school office to create your account.",
-      });
+      return res.status(403).json({ msg: 'Parent self-registration is disabled. Ask the school office to create your account.' });
     }
-
     if (!MOBILE_REGISTER_ROLES.includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: "Mobile registration is restricted to parent accounts.",
-      });
+      return res.status(400).json({ msg: 'Mobile registration is restricted to parent accounts.' });
     }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
-    }
+    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
     const linkedStudents = await findStudentsForParentIdentity({
       ...req.body,
       email: normalizedEmail,
       parentEmail: req.body.parentEmail || normalizedEmail,
     });
-
     if (!linkedStudents.length && !unlinkedParentRegistrationAllowed()) {
       return res.status(400).json({
-        success: false,
-        message: "No matching student record found for this parent account.",
+        msg: 'No matching student record found for this parent account.',
       });
     }
 
     const user = await User.create({
-      name: name.trim(),
+      name,
       email: normalizedEmail,
       password: await bcrypt.hash(password, 10),
       role,
-      isActive: true,
-      ...mobileFields({
-        ...req.body,
-        email: normalizedEmail,
-        role,
-      }),
+      ...mobileFields(req.body),
     });
 
     res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message: 'User registered successfully',
       user: publicUser(user),
     });
   } catch (err) {
-    console.error("Register error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -264,233 +229,125 @@ exports.login = async (req, res) => {
     const email = normalizeEmail(req.body.email);
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
+      return res.status(400).json({ msg: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email });
-
+    const user = await findUserForLogin(email);
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+      return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
-
     if (!passwordMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+      return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: "Your account has been deactivated. Contact admin.",
-      });
-    }
-
-    const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    res.json({
-      success: true,
-      message: "Login successful. Please verify OTP.",
-      token,
-      user: publicUser(user),
-    });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-};
-
-exports.updateProfile = async (req, res) => {
-  try {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized. Please login again.",
-      });
-    }
-
-    const name = req.body.name?.trim();
-    const contactNumber = req.body.contactNumber?.trim() || "";
-    const birthdate = req.body.birthdate?.trim() || "";
-    const gradeSection = req.body.gradeSection?.trim() || "";
-
-    if (!name) {
-      return res.status(400).json({
-        success: false,
-        message: "Name is required",
-      });
-    }
-
-    if (!isValidContactNumber(contactNumber)) {
-      return res.status(400).json({
-        success: false,
-        message: "Contact number must contain exactly 11 digits",
-      });
-    }
-
-    const updateData = {
-      name,
-      contactNumber,
-      birthdate,
-      gradeSection,
-      section: gradeSection,
-    };
-
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: updateData },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    if (user.isActive === false) {
+      return res.status(403).json({ msg: 'Your account has been deactivated. Contact admin.' });
     }
 
     res.json({
       success: true,
-      message: "Profile updated successfully",
+      token: signToken(user),
       user: publicUser(user),
     });
   } catch (err) {
-    console.error("Update profile error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.sendOTP = async (req, res) => {
+exports.requestOtp = async (req, res) => {
   try {
+    const { password } = req.body;
     const email = normalizeEmail(req.body.email);
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
+    if (!email || !password) {
+      return res.status(400).json({ msg: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await findUserForLogin(email);
+    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: "Your account has been deactivated. Contact admin.",
-      });
+    if (user.isActive === false) {
+      return res.status(403).json({ msg: 'Your account has been deactivated. Contact admin.' });
     }
 
     const otp = generateOtp();
-
-    user.otpCode = await bcrypt.hash(otp, 10);
-    user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+    user.otpHash = hashOtp(user, otp);
+    user.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
+    user.otpAttempts = 0;
     await user.save();
 
-    await sendOtpEmail(email, otp);
+    const target = otpDeliveryTarget(user);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[auth] OTP for ${user.email}: ${otp}`);
+    }
 
     res.json({
       success: true,
-      message: "OTP sent successfully",
+      otpRequired: true,
+      message: 'OTP sent to registered contact.',
+      deliveryTarget: maskTarget(target),
+      expiresInSeconds: OTP_TTL_MS / 1000,
+      ...(process.env.NODE_ENV === 'production' ? {} : { devOtp: otp }),
     });
   } catch (err) {
-    console.error("Send OTP error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to send OTP. Check Gmail App Password and backend logs.",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.verifyOTP = async (req, res) => {
+exports.verifyOtp = async (req, res) => {
   try {
     const email = normalizeEmail(req.body.email);
-    const { otp } = req.body;
+    const otp = String(req.body.otp || '').trim();
 
     if (!email || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and OTP are required",
-      });
+      return res.status(400).json({ msg: 'Email and OTP are required' });
+    }
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ msg: 'OTP must be a 6-digit code' });
     }
 
-    const user = await User.findOne({ email });
-
-    if (!user || !user.otpCode || !user.otpExpires) {
-      return res.status(400).json({
-        success: false,
-        message: "No OTP request found. Please request a new OTP.",
-      });
+    const user = await findUserForLogin(email);
+    if (!user || !user.otpHash || !user.otpExpiresAt) {
+      return res.status(400).json({ msg: 'Request a new OTP before verification.' });
     }
-
-    if (user.otpExpires < new Date()) {
-      user.otpCode = null;
-      user.otpExpires = null;
+    if (user.isActive === false) {
+      return res.status(403).json({ msg: 'Your account has been deactivated. Contact admin.' });
+    }
+    if (user.otpExpiresAt.getTime() < Date.now()) {
+      user.otpHash = null;
+      user.otpExpiresAt = null;
+      user.otpAttempts = 0;
       await user.save();
-
-      return res.status(400).json({
-        success: false,
-        message: "OTP expired. Please request a new OTP.",
-      });
+      return res.status(400).json({ msg: 'OTP expired. Request a new code.' });
+    }
+    if ((user.otpAttempts || 0) >= OTP_MAX_ATTEMPTS) {
+      return res.status(429).json({ msg: 'Too many OTP attempts. Request a new code.' });
     }
 
-    const otpMatch = await bcrypt.compare(otp, user.otpCode);
-
-    if (!otpMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
+    const expected = user.otpHash;
+    const actual = hashOtp(user, otp);
+    if (actual !== expected) {
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      await user.save();
+      return res.status(400).json({ msg: 'Invalid OTP' });
     }
 
-    user.otpCode = null;
-    user.otpExpires = null;
+    user.otpHash = null;
+    user.otpExpiresAt = null;
+    user.otpAttempts = 0;
     await user.save();
 
     res.json({
       success: true,
-      message: "OTP verified successfully",
+      token: signToken(user),
       user: publicUser(user),
     });
   } catch (err) {
-    console.error("Verify OTP error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };

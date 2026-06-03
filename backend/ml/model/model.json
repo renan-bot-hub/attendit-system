@@ -7,7 +7,7 @@
         {
           "class_name": "Dense",
           "config": {
-            "units": 64,
+            "units": 32,
             "activation": "relu",
             "use_bias": true,
             "kernel_initializer": {
@@ -28,7 +28,7 @@
             "activity_regularizer": null,
             "kernel_constraint": null,
             "bias_constraint": null,
-            "name": "dense_Dense1",
+            "name": "features_dense_1",
             "trainable": true,
             "batch_input_shape": [
               null,
@@ -40,10 +40,10 @@
         {
           "class_name": "Dropout",
           "config": {
-            "rate": 0.25,
+            "rate": 0.2,
             "noise_shape": null,
             "seed": null,
-            "name": "dropout_Dropout1",
+            "name": "regularization_dropout_1",
             "trainable": true
           }
         },
@@ -71,52 +71,24 @@
             "activity_regularizer": null,
             "kernel_constraint": null,
             "bias_constraint": null,
-            "name": "dense_Dense2",
+            "name": "dense_Dense1",
             "trainable": true
           }
         },
         {
           "class_name": "Dropout",
           "config": {
-            "rate": 0.15,
+            "rate": 0.1,
             "noise_shape": null,
             "seed": null,
-            "name": "dropout_Dropout2",
+            "name": "regularization_dropout_2",
             "trainable": true
           }
         },
         {
           "class_name": "Dense",
           "config": {
-            "units": 16,
-            "activation": "relu",
-            "use_bias": true,
-            "kernel_initializer": {
-              "class_name": "VarianceScaling",
-              "config": {
-                "scale": 1,
-                "mode": "fan_avg",
-                "distribution": "normal",
-                "seed": null
-              }
-            },
-            "bias_initializer": {
-              "class_name": "Zeros",
-              "config": {}
-            },
-            "kernel_regularizer": null,
-            "bias_regularizer": null,
-            "activity_regularizer": null,
-            "kernel_constraint": null,
-            "bias_constraint": null,
-            "name": "dense_Dense3",
-            "trainable": true
-          }
-        },
-        {
-          "class_name": "Dense",
-          "config": {
-            "units": 4,
+            "units": 3,
             "activation": "softmax",
             "use_bias": true,
             "kernel_initializer": {
@@ -137,7 +109,7 @@
             "activity_regularizer": null,
             "kernel_constraint": null,
             "bias_constraint": null,
-            "name": "dense_Dense4",
+            "name": "risk_classification",
             "trainable": true
           }
         }
@@ -156,62 +128,47 @@
       ],
       "weights": [
         {
-          "name": "dense_Dense1/kernel",
+          "name": "features_dense_1/kernel",
           "shape": [
             7,
-            64
+            32
+          ],
+          "dtype": "float32"
+        },
+        {
+          "name": "features_dense_1/bias",
+          "shape": [
+            32
+          ],
+          "dtype": "float32"
+        },
+        {
+          "name": "dense_Dense1/kernel",
+          "shape": [
+            32,
+            32
           ],
           "dtype": "float32"
         },
         {
           "name": "dense_Dense1/bias",
           "shape": [
-            64
-          ],
-          "dtype": "float32"
-        },
-        {
-          "name": "dense_Dense2/kernel",
-          "shape": [
-            64,
             32
           ],
           "dtype": "float32"
         },
         {
-          "name": "dense_Dense2/bias",
-          "shape": [
-            32
-          ],
-          "dtype": "float32"
-        },
-        {
-          "name": "dense_Dense3/kernel",
+          "name": "risk_classification/kernel",
           "shape": [
             32,
-            16
+            3
           ],
           "dtype": "float32"
         },
         {
-          "name": "dense_Dense3/bias",
+          "name": "risk_classification/bias",
           "shape": [
-            16
-          ],
-          "dtype": "float32"
-        },
-        {
-          "name": "dense_Dense4/kernel",
-          "shape": [
-            16,
-            4
-          ],
-          "dtype": "float32"
-        },
-        {
-          "name": "dense_Dense4/bias",
-          "shape": [
-            4
+            3
           ],
           "dtype": "float32"
         }

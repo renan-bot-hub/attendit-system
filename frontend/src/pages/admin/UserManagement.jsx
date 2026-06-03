@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Edit, UserX, UserCheck, Plus, X, Save, Trash2, Upload, Download } from 'lucide-react';
 import { userService } from '../../services/userService';
+import { cleanStudentName } from '../../utils/display';
 
 // CRUD page for users: search, filter, edit, toggle status, delete, bulk import
 export default function UserManagement() {
@@ -90,14 +91,22 @@ export default function UserManagement() {
         return;
       }
       const payload = rows.map((r) => ({
-        name: r.name || r.fullname || '',
+        name: r.name || r.fullname || r.full_name || '',
         email: r.email,
         password: r.password || '',
         role: (r.role || 'student').toLowerCase(),
         studentId: r.studentid || r['student id'] || '',
+        studentNumber: r.studentnumber || r['student number'] || r.studentid || r['student id'] || '',
         section: r.section || '',
         gradeLevel: r.gradelevel || r['grade level'] || r.grade || '',
+        gradeSection: r.gradesection || r['grade section'] || r.section || '',
         department: r.department || '',
+        teacherNumber: r.teachernumber || r['teacher number'] || '',
+        birthdate: r.birthdate || '',
+        contactNumber: r.contactnumber || r['contact number'] || r.phone || '',
+        parentName: r.parentname || r['parent name'] || r.parent || '',
+        parentEmail: r.parentemail || r['parent email'] || '',
+        parentPhone: r.parentphone || r['parent phone'] || '',
       }));
       const res = await userService.bulkCreate(payload);
       setImportResult(res.data);
@@ -113,9 +122,11 @@ export default function UserManagement() {
 
   // Download a sample CSV that shows the expected columns
   const downloadTemplate = () => {
-    const csv = 'name,email,password,role,studentId,section,gradeLevel,department\n' +
-                'Juan Dela Cruz,juan@school.edu,changeme123,student,2025-0001,Grade 10-A,Grade 10,\n' +
-                'Maria Santos,maria@school.edu,changeme123,teacher,,,,Mathematics\n';
+    const csv = [
+      'name,email,password,role,studentId,studentNumber,section,gradeLevel,department,parentName,parentEmail,parentPhone',
+      'Jerome Santiago,jeromesantiago@holyheart.edu.ph,,student,G12-020,G12-020,12 - GAS,Grade 12,,Santiago Parent,santiago.parent@school.edu,',
+      'Maria Santos,maria@school.edu,changeme123,teacher,,,,,Mathematics,,,',
+    ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -200,6 +211,7 @@ export default function UserManagement() {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch =
+      cleanStudentName(user.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole =
@@ -322,7 +334,7 @@ export default function UserManagement() {
                 <div key={user._id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-slate-50 transition-colors">
 
                   <div className="col-span-4">
-                    <h3 className="font-bold text-slate-900 text-sm">{user.name}</h3>
+                    <h3 className="font-bold text-slate-900 text-sm">{cleanStudentName(user.name)}</h3>
                     <p className="text-xs text-slate-500">{user.email}</p>
                   </div>
 
@@ -398,8 +410,8 @@ export default function UserManagement() {
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   className="um-input" />
               </Field>
-              <Field label="Password (min 6)" required>
-                <input type="password" required minLength={6}
+              <Field label="Password (min 6)" required={newUser.role !== 'student'}>
+                <input type="password" required={newUser.role !== 'student'} minLength={6}
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                   className="um-input" />

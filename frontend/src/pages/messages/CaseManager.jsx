@@ -10,6 +10,7 @@ import {
 import { caseService } from '../../services/caseService';
 import { userService } from '../../services/userService';
 import { authService } from '../../services/authService';
+import { RISK_LEVELS, normalizeRiskLevel, riskBadgeClass } from '../../utils/riskLevels';
 
 // Cases & Interventions (manuscript Fig. 11).
 // Layout: counts strip + tabs (Total/Open/Escalated/Resolved) + risk filter +
@@ -25,7 +26,7 @@ export default function CaseManager() {
   const [students, setStudents] = useState([]);
   const [selected, setSelected] = useState(null);
   const [tab, setTab] = useState('All');             // All | Open | Escalated | Resolved
-  const [risk, setRisk] = useState('All');           // All | Critical | High Risk | Medium Risk | Low Risk
+  const [risk, setRisk] = useState('All');           // All | Low | Moderate | High
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,7 +34,7 @@ export default function CaseManager() {
   const [showNew, setShowNew] = useState(false);
   const [newCase, setNewCase] = useState({
     studentId: '', type: 'Attendance Intervention', description: '',
-    fileName: '', riskLevel: 'Medium Risk',
+    fileName: '', riskLevel: 'Moderate',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -78,7 +79,7 @@ export default function CaseManager() {
     if (tab === 'Open')      list = list.filter((c) => ['Open', 'Pending'].includes(c.status));
     if (tab === 'Escalated') list = list.filter((c) => c.status === 'Escalated');
     if (tab === 'Resolved')  list = list.filter((c) => ['Resolved', 'Approved', 'Rejected'].includes(c.status));
-    if (risk !== 'All')      list = list.filter((c) => c.riskLevel === risk);
+    if (risk !== 'All')      list = list.filter((c) => normalizeRiskLevel(c.riskLevel) === risk);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((c) =>
@@ -127,7 +128,7 @@ export default function CaseManager() {
       setCases([res.data, ...cases]);
       setSelected(res.data);
       setShowNew(false);
-      setNewCase({ studentId: '', type: 'Attendance Intervention', description: '', fileName: '', riskLevel: 'Medium Risk' });
+      setNewCase({ studentId: '', type: 'Attendance Intervention', description: '', fileName: '', riskLevel: 'Moderate' });
     } catch (err) {
       setError(err.response?.data?.message || 'Submit failed.');
     } finally {
@@ -148,13 +149,8 @@ export default function CaseManager() {
   };
 
   const riskBadge = (lvl) => {
-    const map = {
-      'Critical':    'bg-red-100 text-red-700',
-      'High Risk':   'bg-orange-100 text-orange-700',
-      'Medium Risk': 'bg-amber-100 text-amber-700',
-      'Low Risk':    'bg-emerald-100 text-emerald-700',
-    };
-    return <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${map[lvl] || 'bg-slate-100 text-slate-600'}`}>{lvl}</span>;
+    const level = normalizeRiskLevel(lvl);
+    return <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${riskBadgeClass(level)}`}>{level}</span>;
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }) : '—';
@@ -202,10 +198,7 @@ export default function CaseManager() {
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option>All</option>
-              <option>Critical</option>
-              <option>High Risk</option>
-              <option>Medium Risk</option>
-              <option>Low Risk</option>
+              {RISK_LEVELS.map((level) => <option key={level}>{level}</option>)}
             </select>
           </div>
 
@@ -385,10 +378,7 @@ export default function CaseManager() {
               </Field>
               <Field label="Risk Level">
                 <select value={newCase.riskLevel} onChange={(e) => setNewCase({ ...newCase, riskLevel: e.target.value })} className="cm-input">
-                  <option>Low Risk</option>
-                  <option>Medium Risk</option>
-                  <option>High Risk</option>
-                  <option>Critical</option>
+                  {RISK_LEVELS.map((level) => <option key={level}>{level}</option>)}
                 </select>
               </Field>
               <Field label="Description *">

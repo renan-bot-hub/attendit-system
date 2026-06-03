@@ -1,5 +1,5 @@
 // Parent Documents review (Fig. 13). Teacher accepts or rejects
-// excuse letters / health certs submitted from the mobile app.
+// excuse letters / health certs submitted for attendance review.
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -9,7 +9,7 @@ import { documentService } from '../../services/documentService';
 import { authService } from '../../services/authService';
 
 // Parent Documents review (manuscript Fig. 13). Teachers review excuse letters
-// and health certificates submitted by parents from the mobile app and accept
+// and health certificates submitted by parents or guardians and accept
 // or reject them.
 export default function ParentDocuments() {
   const isAdmin = authService.getCurrentUser()?.role === 'admin';
@@ -94,7 +94,7 @@ export default function ParentDocuments() {
           <FolderCheck className="w-7 h-7 text-brand-500" /> Parent Documents
         </h1>
         <p className="text-slate-500 mt-2">
-          Review excuse letters and health certificates submitted by parents from the mobile app.
+          Review excuse letters and health certificates submitted by parents or guardians.
         </p>
       </div>
 

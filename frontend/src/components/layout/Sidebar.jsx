@@ -1,5 +1,5 @@
 // Role-aware sidebar navigation. Three nav sets (admin / teacher / staff),
-// school branding from SchoolContext, mobile drawer, and sign-out.
+// school branding from SchoolContext, small-screen drawer, and sign-out.
 
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -64,7 +64,7 @@ const NAV = {
   ],
   staff: [
     { key: 'dashboard',     name: 'POD Dashboard',              path: '/staff' },
-    { key: 'critical',      name: 'Critical Cases',             path: '/critical-cases' },
+    { key: 'critical',      name: 'High Priority Cases',        path: '/critical-cases' },
     { key: 'conferences',   name: 'Conferences',                path: '/conferences' },
     { key: 'cases',         name: 'Cases & Interventions',      path: '/cases' },
     { key: 'documents',     name: 'Parent Documents',           path: '/documents' },

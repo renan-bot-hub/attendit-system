@@ -30,10 +30,9 @@ async function loadSettings() {
 }
 
 function classifyRate(rate, s) {
-  if (rate < s.attendanceCriticalBelow) return 'Critical';
-  if (rate < s.attendanceHighRiskBelow) return 'High Risk';
+  if (rate < s.attendanceHighRiskBelow) return 'High';
   if (rate < s.attendanceModerateBelow) return 'Moderate';
-  return 'Low Risk';
+  return 'Low';
 }
 
 function sameSection(session, student) {
@@ -52,12 +51,6 @@ function buildSessionScopeForUser(user, extra = {}) {
   const filter = { ...extra };
   if (user.role === 'teacher') filter.teacherId = user.id;
   return filter;
-}
-
-async function findRelevantSessions(user, student) {
-  const section = student.section || student.gradeSection;
-  const filter = buildSessionScopeForUser(user, sectionFilter(section));
-  return Session.find(filter).select('_id');
 }
 
 async function loadStudentByIdentifier(identifier) {
@@ -237,113 +230,44 @@ exports.scanQR = async (req, res) => {
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       targetSessionId = decoded.sessionId;
-
       student = await resolveTokenScanStudent(req);
-
       if (!student) {
-        return res.status(403).json({
-          success: false,
-          message: 'No linked student found for this scan.',
-        });
+        return res.status(403).json({ message: 'No linked student found for this scan.' });
       }
-    } else if (qrCode) {
-      if (!['admin', 'staff', 'teacher'].includes(req.user.role)) {
-        return res.status(403).json({
-          success: false,
-          message: 'Only admin, staff, or teacher can scan attendance.',
-        });
+    } else if (qrCode && sessionId) {
+      if (!canManageSession(req.user, { teacherId: req.user.id }) && !['admin', 'staff', 'teacher'].includes(req.user.role)) {
+        return res.status(403).json({ message: 'Unauthorized' });
       }
 
-      student = await loadStudentByIdentifier(qrCode);
-
-      if (!student) {
-        return res.status(404).json({
-          success: false,
-          message: 'Student QR not found.',
-        });
-      }
-
-      if (!targetSessionId) {
-        const activeSessionFilter = {
-          active: true,
-        };
-
-        if (req.user.role === 'teacher') {
-          activeSessionFilter.teacherId = req.user.id;
-        }
-
-        const activeSession = await Session.findOne(activeSessionFilter).sort({
-          createdAt: -1,
-        });
-
-        if (!activeSession) {
-          return res.status(400).json({
-            success: false,
-            message:
-              'No active attendance session found. Please start or activate a session first.',
-          });
-        }
-
-        targetSessionId = activeSession._id;
-      }
+      student = await User.findOne({ qrCode, role: 'student', isActive: true });
+      if (!student) return res.status(404).json({ message: 'Student QR not found' });
     } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid QR payload.',
-      });
+      return res.status(400).json({ message: 'Invalid QR payload' });
     }
 
     if (!targetSessionId || !isValidObjectId(targetSessionId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid sessionId.',
-      });
+      return res.status(400).json({ message: 'Invalid sessionId' });
     }
 
     const session = await Session.findById(targetSessionId);
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found.',
-      });
-    }
-
-    if (!session.active) {
-      return res.status(400).json({
-        success: false,
-        message: 'Session is not active.',
-      });
-    }
-
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    if (!session.active) return res.status(400).json({ message: 'Session is not active' });
     if (!sameSection(session, student)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Student does not belong to this session section.',
-      });
+      return res.status(400).json({ message: 'Student does not belong to this session section' });
     }
-
     if (req.user.role === 'teacher' && !token && !canManageSession(req.user, session)) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only scan attendance for your sessions.',
-      });
+      return res.status(403).json({ message: 'You can only scan attendance for your sessions.' });
     }
 
-    const exists = await Attendance.findOne({
-      studentId: student._id,
-      sessionId: targetSessionId,
-    });
-
+    const exists = await Attendance.findOne({ studentId: student._id, sessionId: targetSessionId });
     if (exists) {
       return res.json({
-        success: true,
-        message: `${student.name} attendance is already recorded.`,
+        message: 'Already recorded',
         student: {
           id: student._id,
           name: student.name,
           studentId: student.studentId,
-          section: student.section,
+          section: student.section || student.gradeSection,
         },
       });
     }
@@ -360,28 +284,18 @@ exports.scanQR = async (req, res) => {
       timestamp: new Date(),
     });
 
-    return res.json({
-      success: true,
-      message: `${student.name} marked PRESENT successfully.`,
+    res.json({
+      message: 'Attendance recorded',
       student: {
         id: student._id,
         name: student.name,
         studentId: student.studentId,
-        section: student.section,
+        section: student.section || student.gradeSection,
       },
     });
   } catch (err) {
-    if (err?.code === 11000) {
-      return res.json({
-        success: true,
-        message: 'Attendance is already recorded.',
-      });
-    }
-
-    return res.status(err.status || 400).json({
-      success: false,
-      message: err.message || 'Invalid QR.',
-    });
+    if (err?.code === 11000) return res.json({ message: 'Already recorded' });
+    res.status(err.status || 400).json({ message: err.message || 'Invalid QR' });
   }
 };
 
@@ -447,12 +361,50 @@ exports.getRiskAnalysis = async (req, res) => {
   try {
     const settings = await loadSettings();
 
-    const students = await User.find(await buildScopedStudentQuery(req.user));
+    const students = await User.find(await buildScopedStudentQuery(req.user))
+      .select('name section gradeSection gradeLevel')
+      .lean();
     if (!students.length) return res.json([]);
 
-    const results = await Promise.all(students.map(async (student) => {
-      const relevantSessions = await findRelevantSessions(req.user, student);
-      const relevantSessionIds = relevantSessions.map((session) => session._id);
+    const sessions = await Session.find(buildSessionScopeForUser(req.user))
+      .select('_id section')
+      .lean();
+
+    const sessionsBySection = new Map();
+    for (const session of sessions) {
+      const key = normalizeText(session.section);
+      const bucket = sessionsBySection.get(key) || [];
+      bucket.push(session);
+      sessionsBySection.set(key, bucket);
+    }
+
+    const allSessionIds = sessions.map((session) => session._id);
+    const allStudentIds = students.map((student) => student._id);
+    const recordsByStudent = new Map();
+
+    if (allSessionIds.length && allStudentIds.length) {
+      const records = await Attendance.find({
+        studentId: { $in: allStudentIds },
+        sessionId: { $in: allSessionIds },
+      })
+        .select('studentId sessionId status timestamp')
+        .sort({ timestamp: 1 })
+        .lean();
+
+      for (const record of records) {
+        const key = asId(record.studentId);
+        const bucket = recordsByStudent.get(key) || [];
+        bucket.push(record);
+        recordsByStudent.set(key, bucket);
+      }
+    }
+
+    const results = students.map((student) => {
+      const sectionName = student.section || student.gradeSection;
+      const relevantSessions = sectionName
+        ? (sessionsBySection.get(normalizeText(sectionName)) || [])
+        : sessions;
+      const relevantSessionIds = new Set(relevantSessions.map((session) => asId(session._id)));
       const totalSessions = relevantSessionIds.length;
       if (totalSessions === 0) {
         return {
@@ -464,13 +416,11 @@ exports.getRiskAnalysis = async (req, res) => {
           absentCount: 0,
           lateCount: 0,
           consecutiveAbsences: 0,
-          riskLevel: classifyRate(0, settings),
+          riskLevel: 'Low',
         };
       }
-      const records = await Attendance.find({
-        studentId: student._id,
-        sessionId: { $in: relevantSessionIds },
-      }).sort({ timestamp: 1 });
+      const records = (recordsByStudent.get(asId(student._id)) || [])
+        .filter((record) => relevantSessionIds.has(asId(record.sessionId)));
       const attendedCount = records.filter((r) => r.status === 'Present' || r.status === 'Late').length;
       const absentCount = records.filter((r) => r.status === 'Absent').length;
       const lateCount = records.filter((r) => r.status === 'Late').length;
@@ -493,7 +443,7 @@ exports.getRiskAnalysis = async (req, res) => {
         consecutiveAbsences: consecutive,
         riskLevel: classifyRate(attendanceRate, settings),
       };
-    }));
+    });
 
     results.sort((a, b) => a.attendanceRate - b.attendanceRate);
     res.json(results);

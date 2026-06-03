@@ -7,6 +7,7 @@ const {
   findStudentsForParentUser,
   getAccessibleStudentIds,
 } = require('../utils/accessControl');
+const { normalizeRiskLevel } = require('../utils/riskLevels');
 
 async function buildConferenceFilter(req) {
   const filter = {};
@@ -32,7 +33,15 @@ exports.list = async (req, res) => {
       .populate('caseRef',     'riskLevel status')
       .populate('scheduledBy', 'name role')
       .sort({ date: 1 });
-    res.json(items);
+    res.json(items.map((item) => {
+      const data = typeof item.toObject === 'function' ? item.toObject() : item;
+      return {
+        ...data,
+        caseRef: data.caseRef
+          ? { ...data.caseRef, riskLevel: normalizeRiskLevel(data.caseRef.riskLevel) }
+          : data.caseRef,
+      };
+    }));
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

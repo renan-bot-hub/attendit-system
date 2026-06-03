@@ -5,6 +5,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, X, Check, Edit2, Filter, Trash2 } from 'lucide-react';
 import { attendService } from '../../services/attendService';
 import { authService } from '../../services/authService';
+import {
+  canonicalSectionName,
+  cleanStudentName,
+  sectionNameComparator,
+} from '../../utils/display';
 
 // Attendance Records (manuscript Fig. 9). Adds: status filter, section filter,
 // "Marked By" column (Scan vs Manual). Inline correction modal keeps the
@@ -19,6 +24,7 @@ export default function AttendanceLedger() {
   const [statusFilter, setStatus]     = useState('All');
   const [sectionFilter, setSection]   = useState('All');
   const [markedByFilter, setMarkedBy] = useState('All');
+  const [dateFilter, setDateFilter]   = useState('Today');
 
   const [editing, setEditing] = useState(null);
   const [newStatus, setNewStatus] = useState('');
@@ -39,21 +45,36 @@ export default function AttendanceLedger() {
   useEffect(() => { fetchAttendanceRecords(); }, []);
 
   const sections = useMemo(() => {
-    const set = new Set(entries.map((e) => e.studentId?.section).filter(Boolean));
-    return ['All', ...[...set].sort()];
+    const set = new Set(entries.map((e) => entrySection(e)).filter(Boolean));
+    return ['All', ...[...set].sort(sectionNameComparator)];
   }, [entries]);
 
+  useEffect(() => {
+    if (sectionFilter !== 'All' && !sections.includes(sectionFilter)) {
+      setSection('All');
+    }
+  }, [sectionFilter, sections]);
+
   const filtered = useMemo(() => {
-    return entries.filter((entry) => {
-      const studentName = entry.studentId?.name || '';
+    return entries
+      .filter((entry) => {
+      const studentName = cleanStudentName(entry.studentId?.name || '');
+      const rawName = entry.studentId?.name || '';
       const date = entry.timestamp ? new Date(entry.timestamp).toLocaleDateString('en-US') : '';
-      const matchesSearch = studentName.toLowerCase().includes(search.toLowerCase()) || date.includes(search);
+      const query = search.toLowerCase();
+      const matchesSearch =
+        studentName.toLowerCase().includes(query) ||
+        rawName.toLowerCase().includes(query) ||
+        (entry.studentId?.studentId || '').toLowerCase().includes(query) ||
+        date.includes(search);
       const matchesStatus  = statusFilter   === 'All' || entry.status   === statusFilter;
-      const matchesSection = sectionFilter  === 'All' || entry.studentId?.section === sectionFilter;
+      const matchesSection = sectionFilter  === 'All' || entrySection(entry) === sectionFilter;
       const matchesMarked  = markedByFilter === 'All' || entry.markedBy === markedByFilter;
-      return matchesSearch && matchesStatus && matchesSection && matchesMarked;
-    });
-  }, [entries, search, statusFilter, sectionFilter, markedByFilter]);
+      const matchesDate = dateFilter === 'All' || isWithinDateFilter(entry.timestamp, dateFilter);
+      return matchesSearch && matchesStatus && matchesSection && matchesMarked && matchesDate;
+    })
+      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+  }, [entries, search, statusFilter, sectionFilter, markedByFilter, dateFilter]);
 
   const statusStyle = (s) => ({
     Present: 'bg-emerald-100 text-emerald-700',
@@ -121,6 +142,13 @@ export default function AttendanceLedger() {
           <div className="flex items-center gap-1 text-xs text-slate-400 font-bold uppercase tracking-wider">
             <Filter className="w-3 h-3" /> Filters
           </div>
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <option value="Today">Today</option>
+            <option value="Week">This Week</option>
+            <option value="Month">This Month</option>
+            <option value="All">All Dates</option>
+          </select>
           <select value={statusFilter} onChange={(e) => setStatus(e.target.value)}
             className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
             <option value="All">All Status</option>
@@ -161,8 +189,8 @@ export default function AttendanceLedger() {
                   <div className="col-span-2 text-slate-600 font-medium">
                     {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString('en-US') : '—'}
                   </div>
-                  <div className="col-span-3 font-bold text-slate-900 truncate">{entry.studentId?.name || '—'}</div>
-                  <div className="col-span-2 text-slate-600">{entry.studentId?.section || '—'}</div>
+                  <div className="col-span-3 font-bold text-slate-900 truncate">{cleanStudentName(entry.studentId?.name) || '—'}</div>
+                  <div className="col-span-2 text-slate-600">{entrySection(entry) || '—'}</div>
                   <div className="col-span-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyle(entry.status)}`}>{entry.status}</span>
                   </div>
@@ -200,8 +228,8 @@ export default function AttendanceLedger() {
             <div className="mb-6 space-y-4">
               <div>
                 <p className="text-xs text-slate-500 font-bold uppercase">Student</p>
-                <p className="text-slate-900 font-medium">{editing.studentId?.name || '—'}</p>
-                <p className="text-xs text-slate-500">{editing.studentId?.section || '—'} • Originally {editing.markedBy || 'Manual'}</p>
+                <p className="text-slate-900 font-medium">{cleanStudentName(editing.studentId?.name) || '—'}</p>
+                <p className="text-xs text-slate-500">{entrySection(editing) || '—'} • Originally {editing.markedBy || 'Manual'}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-bold uppercase mb-2">New Status</p>
@@ -226,4 +254,42 @@ export default function AttendanceLedger() {
       )}
     </div>
   );
+}
+
+function entrySection(entry) {
+  return canonicalSectionName(
+    entry?.studentId?.section || entry?.studentId?.gradeSection || entry?.sessionId?.section || ''
+  );
+}
+
+function isWithinDateFilter(value, filter) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const today = new Date();
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
+
+  if (filter === 'Today') {
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return date >= start && date < end;
+  }
+
+  if (filter === 'Week') {
+    const weekStart = new Date(start);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return date >= weekStart && date < weekEnd;
+  }
+
+  if (filter === 'Month') {
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return date >= monthStart && date < monthEnd;
+  }
+
+  return true;
 }

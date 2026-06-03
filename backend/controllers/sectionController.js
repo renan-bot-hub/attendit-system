@@ -4,11 +4,24 @@ const Section = require('../models/Section');
 const User = require('../models/User');
 const Session = require('../models/Session');
 
+function gradeNumber(value = '') {
+  const match = String(value).match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+function sectionComparator(a, b) {
+  const gradeDiff = gradeNumber(a.gradeLevel) - gradeNumber(b.gradeLevel);
+  if (gradeDiff) return gradeDiff;
+  return String(a.name || '').localeCompare(String(b.name || ''), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+}
+
 exports.list = async (req, res) => {
   try {
     const sections = await Section.find()
-      .populate('adviser', 'name email')
-      .sort({ gradeLevel: 1, name: 1 });
+      .populate('adviser', 'name email');
 
     const counts = await User.aggregate([
       { $match: { role: 'student' } },
@@ -17,7 +30,7 @@ exports.list = async (req, res) => {
 
     const countMap = new Map(counts.map((c) => [c._id, c.count]));
 
-    res.json(sections.map((s) => ({
+    res.json(sections.sort(sectionComparator).map((s) => ({
       ...s.toObject(),
       studentCount: countMap.get(s.name) || 0,
     })));

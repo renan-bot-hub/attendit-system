@@ -1,4 +1,6 @@
 {
+  "task": "attendance-risk-classification",
+  "version": "tfjs-attendance-classifier-v2",
   "featureNames": [
     "attendanceRate",
     "consecutiveAbsences",
@@ -8,30 +10,96 @@
     "last30DayAbsences",
     "worstWeekdayAbsenceRate"
   ],
-  "classes": [
-    "Low Risk",
-    "Medium Risk",
-    "High Risk",
-    "Critical"
-  ],
-  "trainedAt": "2026-06-02T18:27:04.495Z",
-  "dataSource": "synthetic-demo",
-  "productionReady": false,
-  "dataStats": {
-    "rowCount": 6000,
-    "sampleCount": 6000,
-    "labelDistribution": {
-      "Low Risk": 1461,
-      "Medium Risk": 1432,
-      "High Risk": 927,
-      "Critical": 2180
+  "featureSchema": [
+    {
+      "name": "attendanceRate",
+      "description": "Percentage of sessions attended as Present or Late.",
+      "source": "Attendance.status grouped by student and relevant sessions",
+      "min": 0,
+      "max": 100
     },
-    "identifiersHashed": false
+    {
+      "name": "consecutiveAbsences",
+      "description": "Latest consecutive absence streak.",
+      "source": "Attendance.status ordered by timestamp",
+      "min": 0,
+      "max": 30
+    },
+    {
+      "name": "totalAbsences",
+      "description": "Total absence count across scoped sessions.",
+      "source": "Attendance.status grouped by student",
+      "min": 0,
+      "max": 50
+    },
+    {
+      "name": "lateCount",
+      "description": "Total late count across scoped sessions.",
+      "source": "Attendance.status grouped by student",
+      "min": 0,
+      "max": 20
+    },
+    {
+      "name": "last7DayAbsences",
+      "description": "Absences within the last seven days.",
+      "source": "Attendance.timestamp and Attendance.status",
+      "min": 0,
+      "max": 7
+    },
+    {
+      "name": "last30DayAbsences",
+      "description": "Absences within the last thirty days.",
+      "source": "Attendance.timestamp and Attendance.status",
+      "min": 0,
+      "max": 30
+    },
+    {
+      "name": "worstWeekdayAbsenceRate",
+      "description": "Highest absence rate for any weekday with enough samples.",
+      "source": "Attendance.timestamp weekday buckets",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "preprocessing": {
+    "type": "min-max",
+    "description": "Raw MongoDB-derived attendance features are clamped to each feature min/max and scaled into 0..1."
+  },
+  "classes": [
+    "Low",
+    "Moderate",
+    "High"
+  ],
+  "outputType": "multi-class classification",
+  "trainedAt": "2026-06-03T04:57:29.714Z",
+  "dataSource": "historical",
+  "productionReady": true,
+  "dataStats": {
+    "sourceFile": "historical-attendance.csv",
+    "sourceFormat": "csv",
+    "rowCount": 319,
+    "sampleCount": 319,
+    "dataHash": "601f4ca7023e6b656f339d6d01a982577a70dd042eda437ee061ac4754add418",
+    "labelDistribution": {
+      "Low": 51,
+      "Moderate": 44,
+      "High": 224
+    },
+    "sensitiveColumnsExcluded": [
+      "name",
+      "student_name",
+      "email",
+      "parent_email",
+      "phone",
+      "parent_phone",
+      "address"
+    ],
+    "identifiersHashed": true
   },
   "split": {
-    "train": 4200,
-    "validation": 900,
-    "test": 900
+    "train": 223,
+    "validation": 48,
+    "test": 48
   },
   "trainingParameters": {
     "epochs": 60,
@@ -39,141 +107,116 @@
     "optimizer": "adam",
     "learningRate": 0.003,
     "architecture": [
-      "dense:64:relu",
-      "dropout:0.25",
       "dense:32:relu",
-      "dropout:0.15",
-      "dense:16:relu",
-      "dense:4:softmax"
+      "dropout:0.20",
+      "dense:32:relu",
+      "dropout:0.10",
+      "dense:3:softmax"
     ]
   },
   "metrics": {
     "validation": {
-      "accuracy": 0.9778,
-      "macroF1": 0.9756,
-      "macroAuc": 0.9979,
+      "accuracy": 0.9375,
+      "macroF1": 0.8721,
+      "macroAuc": 1,
       "perClass": [
         {
-          "tier": "Low Risk",
-          "precision": 0.9826,
-          "recall": 0.9869,
-          "f1": 0.9847,
-          "auc": 0.9993
+          "tier": "Low",
+          "precision": 0.8,
+          "recall": 1,
+          "f1": 0.8889,
+          "auc": 1
         },
         {
-          "tier": "Medium Risk",
-          "precision": 0.9769,
-          "recall": 0.9814,
-          "f1": 0.9791,
-          "auc": 0.9981
-        },
-        {
-          "tier": "High Risk",
-          "precision": 0.9286,
-          "recall": 0.9862,
-          "f1": 0.9565,
-          "auc": 0.9958
-        },
-        {
-          "tier": "Critical",
+          "tier": "Moderate",
           "precision": 1,
-          "recall": 0.9646,
-          "f1": 0.982,
-          "auc": 0.9985
+          "recall": 0.5714,
+          "f1": 0.7273,
+          "auc": 1
+        },
+        {
+          "tier": "High",
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "auc": 1
         }
       ],
       "confusionMatrix": [
         [
-          226,
+          12,
+          0,
+          0
+        ],
+        [
           3,
-          0,
-          0
-        ],
-        [
           4,
-          211,
-          0,
-          0
-        ],
-        [
-          0,
-          2,
-          143,
           0
         ],
         [
           0,
           0,
-          11,
-          300
+          29
         ]
       ]
     },
     "test": {
-      "accuracy": 0.9678,
-      "macroF1": 0.9608,
-      "macroAuc": 0.9957,
+      "accuracy": 0.9792,
+      "macroF1": 0.9348,
+      "macroAuc": 1,
       "perClass": [
         {
-          "tier": "Low Risk",
-          "precision": 0.9633,
-          "recall": 0.9906,
-          "f1": 0.9767,
-          "auc": 0.9968
+          "tier": "Low",
+          "precision": 0.9,
+          "recall": 1,
+          "f1": 0.9474,
+          "auc": 1
         },
         {
-          "tier": "Medium Risk",
-          "precision": 0.9838,
-          "recall": 0.9681,
-          "f1": 0.9759,
-          "auc": 0.995
+          "tier": "Moderate",
+          "precision": 1,
+          "recall": 0.75,
+          "f1": 0.8571,
+          "auc": 1
         },
         {
-          "tier": "High Risk",
-          "precision": 0.875,
-          "recall": 0.9633,
-          "f1": 0.917,
-          "auc": 0.9926
-        },
-        {
-          "tier": "Critical",
-          "precision": 0.9937,
-          "recall": 0.9543,
-          "f1": 0.9736,
-          "auc": 0.9984
+          "tier": "High",
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "auc": 1
         }
       ],
       "confusionMatrix": [
         [
-          210,
-          2,
+          9,
           0,
           0
         ],
         [
-          8,
-          243,
-          0,
+          1,
+          3,
           0
         ],
         [
           0,
-          2,
-          105,
-          2
-        ],
-        [
           0,
-          0,
-          15,
-          313
+          35
         ]
       ]
     }
   },
   "privacy": {
-    "identifiersHashed": false,
-    "sensitiveColumnsExcluded": [],
+    "identifiersHashed": true,
+    "sensitiveColumnsExcluded": [
+      "name",
+      "student_name",
+      "email",
+      "parent_email",
+      "phone",
+      "parent_phone",
+      "address"
+    ],
     "rawStudentIdentifiersStoredInModel": false
   },
   "fallback": {
@@ -181,7 +224,7 @@
     "description": "aiAlertController falls back to rule-based scoring if TensorFlow inference is unavailable or input data is incomplete."
   },
   "history": {
-    "lossLast": 0.12282861769199371,
-    "accuracyLast": 0.9654761552810669
+    "lossLast": 0.13321493566036224,
+    "accuracyLast": 0.9417040944099426
   }
 }

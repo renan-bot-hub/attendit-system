@@ -1,35 +1,93 @@
-// Input contract for the risk model: 7-feature vector (normalized 0..1)
-// and the 4 risk tier labels. Used by training, inference, and any future
-// retrain so the model always sees inputs in the same shape and scale.
+// TensorFlow classification input contract.
+//
+// These feature names are already produced from MongoDB attendance/session data
+// in aiAlertController.analyseStudent(). Keep this file as the single source of
+// truth for training and prediction so both paths apply the same preprocessing.
 
-const FEATURE_NAMES = [
-  'attendanceRate',
-  'consecutiveAbsences',
-  'totalAbsences',
-  'lateCount',
-  'last7DayAbsences',
-  'last30DayAbsences',
-  'worstWeekdayAbsenceRate',
+const MODEL_TASK = 'attendance-risk-classification';
+const MODEL_VERSION = 'tfjs-attendance-classifier-v2';
+const CLASS_LABELS = ['Low', 'Moderate', 'High'];
+
+const FEATURE_SCHEMA = [
+  {
+    name: 'attendanceRate',
+    description: 'Percentage of sessions attended as Present or Late.',
+    source: 'Attendance.status grouped by student and relevant sessions',
+    min: 0,
+    max: 100,
+  },
+  {
+    name: 'consecutiveAbsences',
+    description: 'Latest consecutive absence streak.',
+    source: 'Attendance.status ordered by timestamp',
+    min: 0,
+    max: 30,
+  },
+  {
+    name: 'totalAbsences',
+    description: 'Total absence count across scoped sessions.',
+    source: 'Attendance.status grouped by student',
+    min: 0,
+    max: 50,
+  },
+  {
+    name: 'lateCount',
+    description: 'Total late count across scoped sessions.',
+    source: 'Attendance.status grouped by student',
+    min: 0,
+    max: 20,
+  },
+  {
+    name: 'last7DayAbsences',
+    description: 'Absences within the last seven days.',
+    source: 'Attendance.timestamp and Attendance.status',
+    min: 0,
+    max: 7,
+  },
+  {
+    name: 'last30DayAbsences',
+    description: 'Absences within the last thirty days.',
+    source: 'Attendance.timestamp and Attendance.status',
+    min: 0,
+    max: 30,
+  },
+  {
+    name: 'worstWeekdayAbsenceRate',
+    description: 'Highest absence rate for any weekday with enough samples.',
+    source: 'Attendance.timestamp weekday buckets',
+    min: 0,
+    max: 1,
+  },
 ];
 
-const RISK_TIERS = ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'];
+const FEATURE_NAMES = FEATURE_SCHEMA.map((feature) => feature.name);
 
-function extractFeatures(s = {}) {
-  const clamp = (v, lo, hi) => {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return lo;
-    return Math.max(lo, Math.min(hi, n));
-  };
-
-  return [
-    clamp(s.attendanceRate, 0, 100) / 100,
-    clamp(s.consecutiveAbsences, 0, 30) / 30,
-    clamp(s.totalAbsences, 0, 50) / 50,
-    clamp(s.lateCount, 0, 20) / 20,
-    clamp(s.last7DayAbsences, 0, 7) / 7,
-    clamp(s.last30DayAbsences, 0, 30) / 30,
-    clamp(s.worstWeekdayAbsenceRate, 0, 1),
-  ];
+function clampNumber(value, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, n));
 }
 
-module.exports = { FEATURE_NAMES, RISK_TIERS, extractFeatures };
+function scaleValue(value, feature) {
+  const clamped = clampNumber(value, feature.min, feature.max);
+  const span = feature.max - feature.min;
+  return span === 0 ? 0 : (clamped - feature.min) / span;
+}
+
+function extractFeatures(signals = {}) {
+  return FEATURE_SCHEMA.map((feature) => scaleValue(signals[feature.name], feature));
+}
+
+function rawFeatureVector(signals = {}) {
+  return FEATURE_SCHEMA.map((feature) => clampNumber(signals[feature.name], feature.min, feature.max));
+}
+
+module.exports = {
+  CLASS_LABELS,
+  FEATURE_NAMES,
+  FEATURE_SCHEMA,
+  MODEL_TASK,
+  MODEL_VERSION,
+  extractFeatures,
+  rawFeatureVector,
+};

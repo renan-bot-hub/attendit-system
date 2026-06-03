@@ -9,7 +9,7 @@ import { useSchool } from '../../context/useSchool';
 // School Settings — admin only.
 // Adds the Attendance Rules & Thresholds card (manuscript Fig. 23):
 //   late cutoff, end-of-day auto-absent, consecutive-absence trigger,
-//   warning + critical absence counts, plus the existing rate bands.
+//   warning + high absence counts, plus the existing rate bands.
 export default function SystemConfig() {
   const { refresh } = useSchool();
   const [form, setForm] = useState({
@@ -59,8 +59,7 @@ export default function SystemConfig() {
   if (loading) return <div className="p-8 text-slate-500">Loading settings…</div>;
 
   // Sanity check: thresholds must be in order
-  const bandsOK = form.attendanceCriticalBelow <= form.attendanceHighRiskBelow
-              && form.attendanceHighRiskBelow <= form.attendanceModerateBelow;
+  const bandsOK = form.attendanceHighRiskBelow <= form.attendanceModerateBelow;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -81,7 +80,7 @@ export default function SystemConfig() {
       {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
       {!bandsOK && <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg flex items-center gap-2">
         <AlertTriangle className="w-4 h-4" />
-        Risk bands should satisfy: Critical % ≤ High Risk % ≤ Moderate %.
+        Risk bands should satisfy: High % ≤ Moderate %.
       </div>}
 
       <Section icon={<School className="w-5 h-5" />} title="School Identity">
@@ -100,7 +99,7 @@ export default function SystemConfig() {
       </Section>
 
       <Section icon={<Clock className="w-5 h-5" />} title="Attendance Rules">
-        <p className="text-xs text-slate-500 mb-4">Used by the mobile scanner and end-of-day finalizer to mark Late vs Absent automatically (Fig. 23).</p>
+        <p className="text-xs text-slate-500 mb-4">Used by attendance recording and the end-of-day finalizer to mark Late vs Absent automatically (Fig. 23).</p>
         <Row label="Late Cutoff Time" hint="Arrivals after this become 'Late' instead of 'Present'.">
           <input type="time" className="cfg-input" value={form.lateCutoffTime} onChange={(e) => setForm({ ...form, lateCutoffTime: e.target.value })} />
         </Row>
@@ -119,17 +118,15 @@ export default function SystemConfig() {
           <input type="number" min="1" max="50" className="cfg-input" value={form.warningTotalAbsences}
             onChange={(e) => setForm({ ...form, warningTotalAbsences: +e.target.value })} />
         </Row>
-        <Row label="Critical total absences" hint="Escalate to POD at this count.">
+        <Row label="High absence trigger" hint="Escalate to POD at this count.">
           <input type="number" min="1" max="50" className="cfg-input" value={form.criticalTotalAbsences}
             onChange={(e) => setForm({ ...form, criticalTotalAbsences: +e.target.value })} />
         </Row>
       </Section>
 
       <Section icon={<Sliders className="w-5 h-5" />} title="Attendance Rate Bands">
-        <p className="text-xs text-slate-500 mb-4">Used by Analytics + AI risk scoring. Each lower band is more severe.</p>
-        <Row label="Critical below (%)"><input type="number" min="0" max="100" className="cfg-input" value={form.attendanceCriticalBelow}
-            onChange={(e) => setForm({ ...form, attendanceCriticalBelow: +e.target.value })} /></Row>
-        <Row label="High Risk below (%)"><input type="number" min="0" max="100" className="cfg-input" value={form.attendanceHighRiskBelow}
+        <p className="text-xs text-slate-500 mb-4">Used by Analytics + AI risk scoring. High is the most severe risk level.</p>
+        <Row label="High below (%)"><input type="number" min="0" max="100" className="cfg-input" value={form.attendanceHighRiskBelow}
             onChange={(e) => setForm({ ...form, attendanceHighRiskBelow: +e.target.value })} /></Row>
         <Row label="Moderate below (%)"><input type="number" min="0" max="100" className="cfg-input" value={form.attendanceModerateBelow}
             onChange={(e) => setForm({ ...form, attendanceModerateBelow: +e.target.value })} /></Row>

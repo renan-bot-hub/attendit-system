@@ -2,6 +2,7 @@
 // Lifecycle: Open → (Escalated) → Resolved.
 
 const mongoose = require('mongoose');
+const { RISK_LEVELS } = require('../utils/riskLevels');
 
 const caseSchema = new mongoose.Schema({
   student: {
@@ -18,8 +19,8 @@ const caseSchema = new mongoose.Schema({
   fileName:    { type: String, default: '' },
   riskLevel: {
     type: String,
-    enum: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'],
-    default: 'Medium Risk',
+    enum: RISK_LEVELS,
+    default: 'Moderate',
   },
   status: {
     type: String,

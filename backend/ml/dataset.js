@@ -1,10 +1,4 @@
-// Synthetic dataset generator for the risk classifier. Produces labeled
-// per-student feature vectors calibrated to the manuscript's attendance
-// policy (consecutive-absence + warning/critical totals + rate bands).
-// Replace generate() with a real-data loader once production history is
-// large enough to train on.
-
-const { extractFeatures, RISK_TIERS } = require('./featureSpec');
+const { CLASS_LABELS, extractFeatures } = require('./featureSpec');
 
 const DEFAULT_THRESHOLDS = {
   attendanceCriticalBelow: 75,
@@ -24,10 +18,9 @@ function randn() {
 
 function labelFor(signals, T) {
   const { attendanceRate, consecutiveAbsences, totalAbsences, lateCount } = signals;
-  if (attendanceRate < T.attendanceCriticalBelow
-      || consecutiveAbsences >= T.criticalTotalAbsences
-      || totalAbsences >= T.criticalTotalAbsences) return 3;
   if (attendanceRate < T.attendanceHighRiskBelow
+      || consecutiveAbsences >= T.criticalTotalAbsences
+      || totalAbsences >= T.criticalTotalAbsences
       || consecutiveAbsences >= T.consecutiveAbsenceThreshold
       || totalAbsences >= T.warningTotalAbsences) return 2;
   if (attendanceRate < T.attendanceModerateBelow || lateCount >= 5) return 1;
@@ -85,7 +78,7 @@ function generate({ n = 5000, thresholds = DEFAULT_THRESHOLDS } = {}) {
     X.push(s.features);
     y.push(s.label);
   }
-  return { X, y, classes: RISK_TIERS };
+  return { X, y, classes: CLASS_LABELS };
 }
 
 module.exports = { generate, labelFor, sampleOne, DEFAULT_THRESHOLDS };

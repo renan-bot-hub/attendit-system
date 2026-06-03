@@ -7,12 +7,34 @@ import {
 } from 'lucide-react';
 import { userService } from '../../services/userService';
 import { sectionService } from '../../services/sectionService';
+import {
+  cleanStudentName,
+  gradeComparator,
+  gradeNumber,
+  sectionObjectComparator,
+} from '../../utils/display';
+
+function studentComparator(a, b) {
+  const gradeDiff = gradeNumber(a.gradeLevel) - gradeNumber(b.gradeLevel);
+  if (gradeDiff) return gradeDiff;
+
+  const sectionDiff = String(a.section || '').localeCompare(String(b.section || ''), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+  if (sectionDiff) return sectionDiff;
+
+  return String(a.studentId || a.name || '').localeCompare(String(b.studentId || b.name || ''), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+}
 
 // Student & Section Management (manuscript Fig. 22). Admin-only.
 // Two tabs: Students (CRUD with parent contact + per-student QR backup
 // regeneration) and Sections (CRUD with adviser assignment + student count).
-// The QR shown here is the data-only token printed on the ID; the actual
-// scanning happens on the mobile app.
+// The QR shown here is the data-only token printed on the ID; attendance
+// recording is handled through the web attendance API.
 export default function StudentManagement() {
   const [tab, setTab] = useState('students');
   const [students, setStudents] = useState([]);
@@ -22,6 +44,7 @@ export default function StudentManagement() {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [search, setSearch] = useState('');
+  const [gradeFilter, setGradeFilter] = useState('All');
   const [sectionFilter, setSectionFilter] = useState('All');
 
   // Student modal
@@ -55,18 +78,29 @@ export default function StudentManagement() {
 
   const showOk = (msg) => { setOk(msg); setTimeout(() => setOk(''), 3000); };
 
+  const sortedSections = useMemo(() => [...sections].sort(sectionObjectComparator), [sections]);
+
+  const gradeOptions = useMemo(() => {
+    const grades = new Set();
+    for (const section of sections) if (section.gradeLevel) grades.add(section.gradeLevel);
+    for (const student of students) if (student.gradeLevel) grades.add(student.gradeLevel);
+    return [...grades].sort(gradeComparator);
+  }, [sections, students]);
+
   const filteredStudents = useMemo(() => {
     let list = students;
+    if (gradeFilter !== 'All') list = list.filter((s) => s.gradeLevel === gradeFilter);
     if (sectionFilter !== 'All') list = list.filter((s) => s.section === sectionFilter);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((s) =>
+        cleanStudentName(s.name || '').toLowerCase().includes(q) ||
         (s.name || '').toLowerCase().includes(q) ||
         (s.studentId || '').toLowerCase().includes(q) ||
         (s.email || '').toLowerCase().includes(q));
     }
-    return list;
-  }, [students, sectionFilter, search]);
+    return [...list].sort(studentComparator);
+  }, [students, gradeFilter, sectionFilter, search]);
 
   // ---- Student CRUD ---------------------------------------------------------
   const openNewStudent = () => setStudentForm({
@@ -74,7 +108,7 @@ export default function StudentManagement() {
     parentName: '', parentEmail: '', parentPhone: '',
   });
 
-  const openEditStudent = (s) => setStudentForm({ ...s });
+  const openEditStudent = (s) => setStudentForm({ ...s, name: cleanStudentName(s.name) });
 
   const saveStudent = async (e) => {
     e.preventDefault();
@@ -124,6 +158,16 @@ export default function StudentManagement() {
 
   const openEditSection = (sec) => setSectionForm({ ...sec, adviser: sec.adviser?._id || '' });
 
+  const updateStudentSection = (sectionName) => {
+    const section = sections.find((sec) => sec.name === sectionName);
+    setStudentForm({
+      ...studentForm,
+      section: sectionName,
+      gradeLevel: section?.gradeLevel || studentForm.gradeLevel || '',
+      gradeSection: sectionName,
+    });
+  };
+
   const saveSection = async (e) => {
     e.preventDefault();
     setSectionSubmitting(true);
@@ -158,8 +202,7 @@ export default function StudentManagement() {
 
   const downloadQrCard = () => {
     if (!qrFor) return;
-    // Tiny printable card: name + ID + QR token text. Real QR rendering is
-    // done by the mobile scanner; here we just hand over the printable token.
+    // Tiny printable card: name + ID + QR token text for replacement IDs.
     const text =
       `Student: ${qrFor.name}\n` +
       `ID: ${qrFor.studentId || '—'}\n` +
@@ -205,7 +248,12 @@ export default function StudentManagement() {
               <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}
                 className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                 <option>All</option>
-                {sections.map((s) => <option key={s._id}>{s.name}</option>)}
+                {sortedSections.map((s) => <option key={s._id}>{s.name}</option>)}
+              </select>
+              <select value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="All">All Grades</option>
+                {gradeOptions.map((grade) => <option key={grade}>{grade}</option>)}
               </select>
               <button onClick={openNewStudent} className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center shadow-sm">
                 <Plus className="w-4 h-4 mr-1" /> New Student
@@ -219,7 +267,7 @@ export default function StudentManagement() {
                 {filteredStudents.map((s) => (
                   <div key={s._id} className="p-4 grid grid-cols-12 gap-3 items-center hover:bg-slate-50">
                     <div className="col-span-4 min-w-0">
-                      <p className="font-bold text-slate-800 text-sm truncate">{s.name}</p>
+                      <p className="font-bold text-slate-800 text-sm truncate">{cleanStudentName(s.name)}</p>
                       <p className="text-xs text-slate-500 truncate">{s.studentId || '—'} • {s.email}</p>
                     </div>
                     <div className="col-span-2 text-xs text-slate-600">{s.section || '—'}</div>
@@ -243,7 +291,7 @@ export default function StudentManagement() {
             )}
           </div>
           <p className="text-xs text-slate-400 italic">
-            QR backup regenerates a fresh scan token for a student whose printed ID is lost. The mobile scanner picks up the new token immediately.
+            QR backup regenerates a fresh attendance token for a student whose printed ID is lost.
           </p>
         </>
       ) : (
@@ -261,7 +309,7 @@ export default function StudentManagement() {
           : sections.length === 0 ? <p className="p-6 text-center text-slate-400">No sections yet.</p>
           : (
             <div className="divide-y divide-slate-100">
-              {sections.map((sec) => (
+              {sortedSections.map((sec) => (
                 <div key={sec._id} className="p-4 grid grid-cols-12 gap-3 items-center hover:bg-slate-50">
                   <div className="col-span-3 font-bold text-slate-800 text-sm">{sec.name}</div>
                   <div className="col-span-2 text-xs text-slate-600">{sec.gradeLevel}</div>
@@ -301,13 +349,13 @@ export default function StudentManagement() {
               </Field>
             </div>
             <Field label="Section">
-              <select value={studentForm.section || ''} onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })} className="sm-input">
+              <select value={studentForm.section || ''} onChange={(e) => updateStudentSection(e.target.value)} className="sm-input">
                 <option value="">— None —</option>
-                {sections.map((sec) => <option key={sec._id}>{sec.name}</option>)}
+                {sortedSections.map((sec) => <option key={sec._id}>{sec.name}</option>)}
               </select>
             </Field>
             <div className="border-t border-slate-100 pt-3">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Parent / Guardian (for mobile portal)</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Parent / Guardian Contact</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Parent Name">
                   <input value={studentForm.parentName || ''} onChange={(e) => setStudentForm({ ...studentForm, parentName: e.target.value })} className="sm-input" />
@@ -371,7 +419,7 @@ export default function StudentManagement() {
               <p className="font-mono text-emerald-300 text-lg break-all mt-1">{qrFor.qrCode || '—'}</p>
             </div>
             <p className="text-xs text-slate-500 italic">
-              Print this token onto a replacement ID card. The mobile scanner will recognize the new token on the student's next scan.
+              Print this token onto a replacement ID card. The attendance API will validate the new token on the next scan.
             </p>
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button onClick={() => setQrFor(null)} className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-lg text-sm">Close</button>

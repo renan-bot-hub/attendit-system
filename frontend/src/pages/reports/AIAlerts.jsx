@@ -5,16 +5,18 @@
 import React, { useEffect, useState } from 'react';
 import {
   RefreshCw, AlertTriangle, ShieldAlert, BellRing, ArrowUpRight,
-  CheckCircle2, XCircle, Send,
+  CheckCircle2, XCircle, Send, Brain,
 } from 'lucide-react';
 import { aiAlertService } from '../../services/aiAlertService';
+import { RISK_LEVELS, normalizeRiskLevel, riskBadgeClass } from '../../utils/riskLevels';
+import { canonicalSectionName, cleanStudentName } from '../../utils/display';
 
 // AI Alerts & Recommendations (manuscript Fig. 10). Cards show the flagged
 // pattern, risk score, and the system's prescriptive recommendations. Teachers
 // can mark Under Review, Escalate to POD (creates a Case), or Dismiss.
 export default function AIAlerts() {
   const [alerts, setAlerts] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Open');
   const [riskFilter, setRiskFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -25,7 +27,8 @@ export default function AIAlerts() {
     setLoading(true);
     try {
       const params = {};
-      if (statusFilter !== 'All') params.status    = statusFilter;
+      if (statusFilter === 'Open') params.status = 'New,Under Review';
+      else if (statusFilter !== 'All') params.status = statusFilter;
       if (riskFilter   !== 'All') params.riskLevel = riskFilter;
       const res = await aiAlertService.list(params);
       setAlerts(res.data);
@@ -48,7 +51,13 @@ export default function AIAlerts() {
     setOk('');
     try {
       const res = await aiAlertService.run();
-      setOk(`Analysis complete — ${res.data.created} new, ${res.data.refreshed} refreshed.`);
+      const scorer = res.data.scorer || {};
+      const modelText = scorer.modelReady
+        ? `${scorer.model || 0} model-scored`
+        : 'model unavailable, rule fallback used';
+      setOk(
+        `Analysis complete - ${res.data.created} new, ${res.data.refreshed} refreshed, ${modelText}.`
+      );
       load();
     } catch (err) {
       setError(err.response?.data?.message || 'Run failed.');
@@ -70,20 +79,13 @@ export default function AIAlerts() {
   const escalate = async (id) => {
     try {
       await aiAlertService.escalate(id);
-      setOk('Escalated to POD — case opened.');
+      setOk('Escalated to POD - case opened.');
       load();
       setTimeout(() => setOk(''), 4000);
     } catch (err) {
       setError(err.response?.data?.message || 'Escalation failed.');
     }
   };
-
-  const riskStyle = (lvl) => ({
-    'Critical':    'bg-red-100 text-red-700 border-red-200',
-    'High Risk':   'bg-orange-100 text-orange-700 border-orange-200',
-    'Medium Risk': 'bg-amber-100 text-amber-700 border-amber-200',
-    'Low Risk':    'bg-emerald-100 text-emerald-700 border-emerald-200',
-  }[lvl] || 'bg-slate-100 text-slate-700 border-slate-200');
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -111,9 +113,9 @@ export default function AIAlerts() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap gap-3">
         <Select label="Status" value={statusFilter} onChange={setStatusFilter}
-          options={['All', 'New', 'Under Review', 'Actioned', 'Dismissed']} />
+          options={['Open', 'All', 'New', 'Under Review', 'Actioned', 'Dismissed']} />
         <Select label="Risk Level" value={riskFilter} onChange={setRiskFilter}
-          options={['All', 'Critical', 'High Risk', 'Medium Risk', 'Low Risk']} />
+          options={['All', ...RISK_LEVELS]} />
       </div>
 
       {loading ? (
@@ -126,20 +128,22 @@ export default function AIAlerts() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {alerts.map((a) => (
+          {alerts.map((a) => {
+            const riskLevel = normalizeRiskLevel(a.riskLevel);
+            return (
             <div key={a._id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <p className="text-xs font-semibold text-slate-400">
-                    {a.section || a.student?.section || '—'} • Flagged {new Date(a.flaggedOn).toLocaleDateString()}
+                    {alertSection(a) || '-'} / Flagged {new Date(a.flaggedOn).toLocaleDateString()}
                   </p>
                   <h3 className="text-lg font-semibold text-slate-900 leading-tight mt-1">
-                    {a.student?.name || 'Unknown student'}
+                    {cleanStudentName(a.student?.name) || 'Unknown student'}
                   </h3>
-                  <p className="text-xs text-slate-500">{a.student?.studentId || '—'}</p>
+                  <p className="text-xs text-slate-500">{a.student?.studentId || '-'}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[11px] font-semibold border ${riskStyle(a.riskLevel)}`}>
-                  {a.riskLevel}
+                <span className={`px-3 py-1 rounded-full text-[11px] font-semibold border ${riskBadgeClass(riskLevel)}`}>
+                  {riskLevel}
                 </span>
               </div>
 
@@ -148,6 +152,8 @@ export default function AIAlerts() {
                 <Stat label="Detail" value={a.patternDetail} mono />
                 <Stat label="Risk Score" value={`${a.riskScore}/100`} accent={a.riskScore >= 75 ? 'text-red-600' : a.riskScore >= 55 ? 'text-orange-600' : 'text-amber-600'} />
               </div>
+
+              <ModelSummary alert={a} />
 
               {a.recommendations?.length > 0 && (
                 <div className="mb-4">
@@ -204,7 +210,8 @@ export default function AIAlerts() {
                 </p>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -245,4 +252,62 @@ function Banner({ type, children }) {
       <Icon className="w-4 h-4" /> {children}
     </div>
   );
+}
+
+function ModelSummary({ alert }) {
+  const probabilities = normalizeProbabilities(alert.modelProbabilities);
+  const usedModel = alert.scorer === 'model';
+
+  return (
+    <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${
+          usedModel ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-600'
+        }`}>
+          <Brain className="h-3 w-3" />
+          {usedModel ? 'TensorFlow classifier' : 'Rule fallback'}
+        </span>
+        {alert.modelVersion && (
+          <span className="text-[11px] font-medium text-slate-500">{alert.modelVersion}</span>
+        )}
+      </div>
+
+      {probabilities.length > 0 && (
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {probabilities.map(({ label, value }) => (
+            <div key={label}>
+              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                <span>{label}</span>
+                <span>{Math.round(value * 100)}%</span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white">
+                <div
+                  className={`h-full rounded-full ${probabilityBarClass(label)}`}
+                  style={{ width: `${Math.max(2, Math.round(value * 100))}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function normalizeProbabilities(value) {
+  if (!value) return [];
+  const source = value instanceof Map ? Object.fromEntries(value.entries()) : value;
+  return ['Low', 'Moderate', 'High']
+    .map((label) => ({ label, value: Number(source[label] || 0) }))
+    .filter((item) => Number.isFinite(item.value) && item.value >= 0);
+}
+
+function probabilityBarClass(label) {
+  if (label === 'High') return 'bg-red-500';
+  if (label === 'Moderate') return 'bg-amber-500';
+  return 'bg-emerald-500';
+}
+
+function alertSection(alert) {
+  return canonicalSectionName(alert?.section || alert?.student?.section || alert?.student?.gradeSection || '');
 }

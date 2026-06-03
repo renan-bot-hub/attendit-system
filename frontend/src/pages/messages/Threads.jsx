@@ -1,5 +1,5 @@
 // Triggered Threads (Fig. 12). Teacher opens a thread about a student;
-// parent replies via mobile. Either side can Close / Reopen.
+// parent/guardian conversations. Either side can Close / Reopen.
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -151,7 +151,7 @@ export default function Threads() {
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Triggered Threads</h1>
           <p className="text-slate-500 mt-2">
-            Teacher-initiated parent conversations. Parents reply from the mobile app while the thread is open.
+            Teacher-initiated parent or guardian conversations stay open until they are closed by an authorized user.
           </p>
         </div>
         {canOpenThread && (

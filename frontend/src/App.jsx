@@ -10,7 +10,6 @@ import { SchoolProvider } from './context/SchoolContext';
 import { authService } from './services/authService';
 
 import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
 
 import AdminDashboard   from './pages/dashboards/AdminDashboard';
 import TeacherDashboard from './pages/dashboards/TeacherDashboard';
@@ -31,7 +30,7 @@ import Announcements   from './pages/messages/Announcements';
 import AIAlerts      from './pages/reports/AIAlerts';
 import Analytics     from './pages/reports/Analytics';
 import Reports       from './pages/reports/Reports';
-import CriticalCases from './pages/staff/CriticalCases';
+import HighPriorityCases from './pages/staff/HighPriorityCases';
 import Conferences   from './pages/staff/Conferences';
 
 import Profile from './pages/profile/Profile';
@@ -50,7 +49,6 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
 
           {/* Protected layout */}
           <Route element={<MainLayout />}>
@@ -72,7 +70,7 @@ export default function App() {
             <Route path="/documents"  element={<RoleRoute roles={ALL}><ParentDocuments /></RoleRoute>} />
 
             {/* Staff / POD */}
-            <Route path="/critical-cases" element={<RoleRoute roles={STAFF_POD}><CriticalCases /></RoleRoute>} />
+            <Route path="/critical-cases" element={<RoleRoute roles={STAFF_POD}><HighPriorityCases /></RoleRoute>} />
             <Route path="/conferences"    element={<RoleRoute roles={STAFF_POD}><Conferences /></RoleRoute>} />
 
             {/* Everyone authenticated */}

@@ -13,6 +13,7 @@ import { sessionService } from '../../services/sessionService';
 import { documentService } from '../../services/documentService';
 import { authService } from '../../services/authService';
 import { useSchool } from '../../context/useSchool';
+import { normalizeRiskLevel } from '../../utils/riskLevels';
 
 // Teacher Dashboard — manuscript Fig. 8.
 // Adds: consecutive-absence cases tile, warning/critical counts, weekly
@@ -56,13 +57,12 @@ export default function TeacherDashboard() {
   }, []);
 
   const counts = useMemo(() => {
-    const critical = risk.filter((r) => r.riskLevel === 'Critical').length;
-    const high     = risk.filter((r) => r.riskLevel === 'High Risk').length;
-    const moderate = risk.filter((r) => r.riskLevel === 'Moderate').length;
+    const high     = risk.filter((r) => normalizeRiskLevel(r.riskLevel) === 'High').length;
+    const moderate = risk.filter((r) => normalizeRiskLevel(r.riskLevel) === 'Moderate').length;
     const consecutive = risk.filter((r) => r.consecutiveAbsences >= settings.consecutiveAbsenceThreshold).length;
     const warning  = risk.filter((r) => r.absentCount >= settings.warningTotalAbsences && r.absentCount < settings.criticalTotalAbsences).length;
-    const crit     = risk.filter((r) => r.absentCount >= settings.criticalTotalAbsences).length;
-    return { critical, high, moderate, consecutive, warning, crit };
+    const highAbsences = risk.filter((r) => r.absentCount >= settings.criticalTotalAbsences).length;
+    return { high, moderate, consecutive, warning, highAbsences };
   }, [risk, settings]);
 
   // Per-weekday absence tally over the trend window
@@ -93,13 +93,14 @@ export default function TeacherDashboard() {
       {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
 
       {/* Headline tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         <Tile label="My Sessions"        value={loading ? '—' : sessions.length} icon={<BookOpen className="w-4 h-4" />} accent="text-brand-600" />
         <Tile label="Total Students"     value={loading ? '—' : summary.totalStudents || 0} icon={<Users className="w-4 h-4" />} accent="text-emerald-600" />
         <Tile label="Overall Rate"       value={loading ? '—' : `${summary.overallRate || 0}%`} icon={<FileBarChart className="w-4 h-4" />} accent="text-amber-600" />
-        <Tile label="Critical (rate)"    value={loading ? '—' : counts.critical} icon={<AlertCircle className="w-4 h-4" />} accent="text-red-600" />
+        <Tile label="High"               value={loading ? '—' : counts.high} icon={<AlertCircle className="w-4 h-4" />} accent="text-red-600" />
+        <Tile label="Moderate"           value={loading ? '—' : counts.moderate} icon={<AlertTriangle className="w-4 h-4" />} accent="text-amber-600" />
         <Tile label="Consecutive Cases"  value={loading ? '—' : counts.consecutive} icon={<ShieldAlert className="w-4 h-4" />} accent="text-orange-600" />
-        <Tile label="Warning / Critical" value={loading ? '—' : `${counts.warning} / ${counts.crit}`} icon={<AlertTriangle className="w-4 h-4" />} accent="text-rose-600" />
+        <Tile label="Warning / High"     value={loading ? '—' : `${counts.warning} / ${counts.highAbsences}`} icon={<AlertTriangle className="w-4 h-4" />} accent="text-rose-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -141,8 +142,7 @@ export default function TeacherDashboard() {
                       <div
                         className={`h-2 rounded-full ${
                           r.attendanceRate >= settings.attendanceModerateBelow ? 'bg-emerald-500' :
-                          r.attendanceRate >= settings.attendanceHighRiskBelow ? 'bg-amber-500' :
-                          r.attendanceRate >= settings.attendanceCriticalBelow ? 'bg-orange-500' : 'bg-red-500'
+                          r.attendanceRate >= settings.attendanceHighRiskBelow ? 'bg-amber-500' : 'bg-red-500'
                         }`}
                         style={{ width: `${r.attendanceRate}%` }}
                       />

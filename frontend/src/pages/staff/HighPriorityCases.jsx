@@ -1,4 +1,4 @@
-// Critical Cases (Fig. 17). Escalated cases + students past the critical
+// High Priority Cases (Fig. 17). Escalated cases + students past the high
 // absence threshold. POD can schedule a conference or resolve inline.
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -8,10 +8,10 @@ import { conferenceService } from '../../services/conferenceService';
 import { attendService } from '../../services/attendService';
 import { useSchool } from '../../context/useSchool';
 
-// Staff Critical Cases (manuscript Fig. 17). Shows students with 5+ absences
-// (or whatever critical threshold the admin configured) plus all escalated
+// Staff High Priority Cases (manuscript Fig. 17). Shows students with 5+ absences
+// (or whatever high threshold the admin configured) plus all escalated
 // cases. POD can schedule a conference inline or resolve a case.
-export default function CriticalCases() {
+export default function HighRiskCases() {
   const { settings } = useSchool();
   const [cases, setCases] = useState([]);
   const [risk, setRisk] = useState([]);
@@ -31,7 +31,7 @@ export default function CriticalCases() {
       setRisk(riskRes.data);
       setError('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load critical cases.');
+      setError(err.response?.data?.message || 'Failed to load high risk cases.');
     } finally {
       setLoading(false);
     }
@@ -78,10 +78,10 @@ export default function CriticalCases() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <ShieldAlert className="w-7 h-7 text-red-500" /> Critical Cases
+          <ShieldAlert className="w-7 h-7 text-red-500" /> High Priority Cases
         </h1>
         <p className="text-slate-500 mt-2">
-          Students past the critical-absence threshold ({settings.criticalTotalAbsences || 5}+) and cases escalated for disciplinary action.
+          Students past the high absence threshold ({settings.criticalTotalAbsences || 5}+) and cases escalated for disciplinary action.
         </p>
       </div>
 

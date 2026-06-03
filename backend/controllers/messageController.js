@@ -6,6 +6,7 @@ const Thread = require('../models/Thread');
 const User = require('../models/User');
 const { isValidObjectId } = require('../middleware/validateRequest');
 const { userCanAccessStudent } = require('../utils/accessControl');
+const { normalizeRiskLevel } = require('../utils/riskLevels');
 
 async function loadThreadForParticipant(req, res) {
   if (!isValidObjectId(req.params.id)) {
@@ -51,7 +52,14 @@ exports.listThreads = async (req, res) => {
         recipient: me,
         read: false,
       });
-      return { ...thread.toObject(), unread };
+      const data = thread.toObject();
+      return {
+        ...data,
+        caseRef: data.caseRef
+          ? { ...data.caseRef, riskLevel: normalizeRiskLevel(data.caseRef.riskLevel) }
+          : data.caseRef,
+        unread,
+      };
     }));
 
     res.json(enriched);

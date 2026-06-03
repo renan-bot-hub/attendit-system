@@ -22,13 +22,13 @@ test('parseCsv handles quoted commas', () => {
 
 test('loadHistoricalDataset converts aggregated anonymized rows into feature vectors', () => {
   const header = 'student_id,name,email,attendance_rate,consecutive_absences,total_absences,late_count,last7_day_absences,last30_day_absences,worst_weekday_absence_rate,risk_label';
-  const rows = Array.from({ length: 20 }, (_, index) => {
-    const tier = index % 4;
-    const labels = ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'];
-    const attendance = [98, 90, 84, 72][tier];
-    const consecutive = [0, 0, 3, 5][tier];
-    const total = [0, 2, 4, 6][tier];
-    const late = [1, 5, 4, 6][tier];
+  const rows = Array.from({ length: 21 }, (_, index) => {
+    const tier = index % 3;
+    const labels = ['Low', 'Moderate', 'High'];
+    const attendance = [98, 90, 72][tier];
+    const consecutive = [0, 0, 5][tier];
+    const total = [0, 2, 6][tier];
+    const late = [1, 5, 6][tier];
     return [
       `S-${String(index + 1).padStart(3, '0')}`,
       `Student ${index + 1}`,
@@ -47,14 +47,15 @@ test('loadHistoricalDataset converts aggregated anonymized rows into feature vec
 
   const dataset = loadHistoricalDataset(file, { salt: 'test-salt' });
 
-  assert.equal(dataset.X.length, 20);
-  assert.equal(dataset.y.length, 20);
+  assert.equal(dataset.X.length, 21);
+  assert.equal(dataset.y.length, 21);
   assert.equal(dataset.X[0].length, 7);
   assert.equal(dataset.stats.identifiersHashed, true);
   assert.equal(dataset.samples[0].subjectHash, hashIdentifier('S-001', 'test-salt'));
   assert.equal(dataset.samples[0].name, undefined);
-  assert.equal(dataset.stats.labelDistribution['Low Risk'], 5);
-  assert.equal(dataset.stats.labelDistribution.Critical, 5);
+  assert.equal(dataset.stats.labelDistribution.Low, 7);
+  assert.equal(dataset.stats.labelDistribution.Moderate, 7);
+  assert.equal(dataset.stats.labelDistribution.High, 7);
 });
 
 test('loadHistoricalDataset can aggregate raw attendance rows by student', () => {
@@ -73,4 +74,30 @@ test('loadHistoricalDataset can aggregate raw attendance rows by student', () =>
   assert.equal(dataset.X.length, 20);
   assert.equal(dataset.stats.rowCount, 200);
   assert.ok(dataset.y.every((label) => Number.isInteger(label)));
+});
+
+test('loadHistoricalDataset maps legacy risk labels into three tiers', () => {
+  const header = 'student_id,attendance_rate,consecutive_absences,total_absences,late_count,last7_day_absences,last30_day_absences,worst_weekday_absence_rate,risk_label';
+  const legacyLabels = ['Low Risk', 'Medium Risk', 'High Risk', 'Critical'];
+  const rows = Array.from({ length: 20 }, (_, index) => {
+    const label = legacyLabels[index % legacyLabels.length];
+    return [
+      `L-${String(index + 1).padStart(3, '0')}`,
+      90,
+      0,
+      2,
+      2,
+      0,
+      2,
+      0.1,
+      label,
+    ].join(',');
+  });
+  const file = tempFile('legacy-training.csv', [header, ...rows].join('\n'));
+
+  const dataset = loadHistoricalDataset(file, { salt: 'legacy-salt' });
+
+  assert.equal(dataset.stats.labelDistribution.Low, 5);
+  assert.equal(dataset.stats.labelDistribution.Moderate, 5);
+  assert.equal(dataset.stats.labelDistribution.High, 10);
 });
