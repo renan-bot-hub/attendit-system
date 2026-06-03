@@ -1,35 +1,48 @@
 const mongoose = require('mongoose');
 
-// Cache connection state globally across serverless invocations
-let isConnected = false; 
+require('./env');
+
+// Cache the connection pool and the connection promise globally across serverless invocations
+let cachedConnection = null;
+let cachedPromise = null;
 
 async function connectDB() {
-  // If already connected, reuse the active pool
-  if (isConnected && mongoose.connection.readyState === 1) {
-    console.log('Reusing warm database connection instance');
-    return;
+  // 1. If we already have a healthy connection, reuse it immediately
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
+  }
+
+  // 2. If a connection is already in progress, make this request wait for it
+  if (cachedPromise) {
+    console.log('Waiting for existing database connection promise...');
+    await cachedPromise;
+    return mongoose;
   }
 
   if (!process.env.MONGO_URI) {
-    throw new Error('MONGO_URI missing from deployment environment variables.');
+    throw new Error('MONGO_URI is missing from environment variables.');
   }
 
-  try {
-    console.log('Initiating database connection handshake...');
-    
-    // Serverless-specific connection tuning
-    const db = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // Crash quickly (5s) instead of hanging the function
-      bufferCommands: false,         // Turn off buffering to surface connection faults immediately
-    });
+  const timeout = Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || 10000;
 
-    isConnected = db.connections[0].readyState === 1;
-    console.log('MongoDB connected cleanly.');
-  } catch (err) {
-    console.error('Database connection failed directly:', err.message);
-    isConnected = false;
-    throw err; // Crucial: Throwing tells your endpoints that the DB is broken
-  }
+  console.log('Initiating brand new MongoDB connection pool...');
+  
+  // 3. Save the connection promise globally so other incoming requests chain onto it
+  cachedPromise = mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: timeout,
+    bufferCommands: true, // Re-enable buffering now that we have a centralized promise tracking system
+  }).then((mongooseInstance) => {
+    console.log('MongoDB connection established successfully.');
+    cachedConnection = mongooseInstance;
+    return cachedConnection;
+  }).catch((err) => {
+    console.error('MongoDB connection promise rejected:', err.message);
+    cachedPromise = null; // Reset on failure so the next request can retry
+    throw err;
+  });
+
+  await cachedPromise;
+  return mongoose;
 }
 
 module.exports = connectDB;
