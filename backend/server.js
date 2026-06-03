@@ -97,11 +97,24 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/api/health", (req, res) => {
+// FIXED: Converted to an async handler to force connectDB() to finish on serverless environments
+app.get("/api/health", async (req, res) => {
+  let dbStatus = "disconnected";
+  let dbError = null;
+
+  try {
+    // Force Mongoose to verify connection before compiling health results
+    await connectDB();
+    dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+  } catch (err) {
+    dbError = err.message;
+  }
+
   res.json({
-    status: "ok",
+    status: dbError ? "error" : "ok",
     app: "Attend-IT Backend API",
-    db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    db: dbStatus,
+    error_details: dbError, // Captures and surfaces firewall/auth issues explicitly
     uptime: process.uptime(),
     env: process.env.NODE_ENV || "development",
     tensorflow: process.env.VERCEL ? "disabled on serverless" : "attendance risk model enabled",
@@ -125,7 +138,7 @@ app.use("/api/qr", qrRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// --- MODIFIED STARTUP LOGIC FOR VERCEL COMPATIBILITY ---
+// --- STARTUP LOGIC FOR VERCEL COMPATIBILITY ---
 
 if (!process.env.MONGO_URI) {
   console.error("FATAL: MONGO_URI is not set.");
@@ -143,7 +156,6 @@ async function start() {
   try {
     await connectDB();
 
-    // Skip training on Vercel to bypass the 10s serverless timeout limit
     if (!process.env.VERCEL) {
       try {
         await trainRiskModel();
@@ -152,7 +164,6 @@ async function start() {
       }
     }
 
-    // Skip app.listen() on Vercel; Vercel handles the routing instantiation internally
     if (!process.env.VERCEL) {
       const server = app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
