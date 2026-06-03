@@ -51,23 +51,44 @@ function formatMongoError(err) {
   return `MongoDB connection error: ${err.message}`;
 }
 
+// Global variable to cache the Mongoose connection across serverless function invocations
+let cachedConnection = null;
+
 async function connectDB(options = {}) {
   if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI is not set. Add it to backend/.env or your deployment environment.');
+  }
+
+  // If a connection already exists, reuse it instead of opening a new one
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    console.log('Reusing existing MongoDB connection');
+    return cachedConnection;
   }
 
   const timeout = Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || DEFAULT_SERVER_SELECTION_TIMEOUT_MS;
 
   try {
     console.log(`MongoDB connecting to ${describeMongoUri(process.env.MONGO_URI)}`);
-    await mongoose.connect(process.env.MONGO_URI, {
+    
+    // Serverless-friendly optimization: Ensure Mongoose queues operations while connecting
+    const opts = {
       serverSelectionTimeoutMS: timeout,
+      bufferCommands: true, 
       ...options,
-    });
+    };
+
+    // Await the connection explicitly
+    cachedConnection = await mongoose.connect(process.env.MONGO_URI, opts);
     console.log('MongoDB connected successfully');
+    return cachedConnection;
   } catch (err) {
     err.message = formatMongoError(err);
-    throw err;
+    // Don't kill the server process in production/Vercel for intermittent connection blips
+    if (!process.env.VERCEL) {
+      throw err;
+    } else {
+      console.error(err.message);
+    }
   }
 }
 
